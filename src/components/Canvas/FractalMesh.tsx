@@ -27,13 +27,13 @@ export function FractalMesh() {
 
   // Инициализируем uniforms один раз
   const uniforms = useMemo(
-    () => ({
-      u_resolution: { value: new THREE.Vector2(size.width, size.height) },
-      u_offset: { value: new THREE.Vector2(offset[0], offset[1]) },
-      u_zoom: { value: zoom },
-      u_max_iterations: { value: maxIterations },
-      u_palette: { value: PALETTE_MAP[palette] },
-    }),
+    () =>
+      ({
+        u_scale: { value: new THREE.Vector2(size.width / size.height / zoom, 1 / zoom) },
+        u_offset: { value: new THREE.Vector2(offset[0], offset[1]) },
+        u_max_iterations: { value: maxIterations },
+        u_palette: { value: PALETTE_MAP[palette] },
+      }) as const satisfies THREE.ShaderMaterialProperties['uniforms'],
     []
   );
 

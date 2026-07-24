@@ -1,15 +1,17 @@
-uniform vec2 u_resolution;
+precision highp float;
+
+uniform vec2 u_scale;
 uniform vec2 u_offset;
-uniform float u_zoom;
 uniform int u_max_iterations;
-uniform int u_palette; // 0: classic, 1: fire, 2: electric, 3: psychedelic, 4: monochrome
+uniform int u_palette;
 
 varying vec2 vUv;
 
 // Генератор процедурных палитр (Cosine based palette generator)
 // color(t) = a + b * cos(2.0 * PI * (c * t + d))
 vec3 getPaletteColor(float t, int palette) {
-    const float PI = 3.14159265359;
+    // const float PI = 3.14159265359;
+    const float PI = acos(-1.0);
 
     vec3 a, b, c, d;
 
@@ -43,17 +45,18 @@ vec3 getPaletteColor(float t, int palette) {
     return a + b * cos(2.0 * PI * (c * t + d));
 }
 
+vec2 complexSquare(vec2 z){
+    return vec2(z.x * z.x - z.y * z.y, 2.0 * z.x * z.y);
+}
+
 void main() {
     // Приводим UV к центру и исправляем пропорции сторон
-    float aspect = u_resolution.x / u_resolution.y;
-    vec2 st = (vUv - 0.5) * vec2(aspect, 1.0);
-
     // Переводим экранные координаты в комплексную плоскость c = x + i*y
-    vec2 c = st / u_zoom + u_offset;
+    vec2 c = (vUv - 0.5) * u_scale + u_offset;
+
     vec2 z = vec2(0.0);
 
     float iter = 0.0;
-    float maxIter = float(u_max_iterations);
     bool escaped = false;
 
     // Основной цикл генерации фрактала z = z^2 + c
@@ -61,7 +64,7 @@ void main() {
         if (i >= u_max_iterations) break;
 
         // z^2 = (z.x^2 - z.y^2) + i*(2.0*z.x*z.y)
-        z = vec2(z.x * z.x - z.y * z.y, 2.0 * z.x * z.y) + c;
+        z = complexSquare(z) + c;
 
         if (dot(z, z) > 4.0) { // |z|^2 > 4 -> точка "улетела" в бесконечность
             escaped = true;
