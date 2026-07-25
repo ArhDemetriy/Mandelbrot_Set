@@ -45,10 +45,6 @@ vec3 getPaletteColor(float t, int palette) {
     return a + b * cos(2.0 * PI * (c * t + d));
 }
 
-vec2 complexSquare(vec2 z){
-    return vec2(z.x * z.x - z.y * z.y, 2.0 * z.x * z.y);
-}
-
 void main() {
     // Приводим UV к центру и исправляем пропорции сторон
     // Переводим экранные координаты в комплексную плоскость c = x + i*y
@@ -56,21 +52,20 @@ void main() {
 
     vec2 z = vec2(0.0);
 
-    float iter = 0.0;
+    int iter = 0;
     bool escaped = false;
 
     // Основной цикл генерации фрактала z = z^2 + c
     for (int i = 0; i < 5000; i++) {
         if (i >= u_max_iterations) break;
 
-        // z^2 = (z.x^2 - z.y^2) + i*(2.0*z.x*z.y)
-        z = complexSquare(z) + c;
-
-        if (dot(z, z) > 4.0) { // |z|^2 > 4 -> точка "улетела" в бесконечность
+        vec2 v0 = z * z;
+        if (dot(v0, vec2(1.0)) > 4.0) {
             escaped = true;
-            iter = float(i);
+            iter = i;
             break;
         }
+        z = vec2(dot(v0, vec2(1.0,-1.0)), 2.0 * z.x * z.y) + c;
     }
 
     // Если точка принадлежит множеству Мандельброта (не улетела) — красим в черный
@@ -83,7 +78,7 @@ void main() {
     // nu = log2(log(|z|))
     float log_zn = log(dot(z, z)) / 2.0;
     float nu = log(log_zn / log(2.0)) / log(2.0);
-    float smoothIter = iter + 1.0 - nu;
+    float smoothIter = float(iter) + 1.0 - nu;
 
     // Нормализуем значение для получения цикличного градиента
     float t = smoothIter / 30.0; // 30.0 регулирует плотность полос градиента

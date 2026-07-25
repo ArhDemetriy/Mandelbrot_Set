@@ -26,14 +26,14 @@ export function FractalMesh() {
   const palette = useAtomValue(paletteAtom);
 
   // Инициализируем uniforms один раз
-  const uniforms = useMemo(
+  const initUniforms = useMemo(
     () =>
       ({
         u_scale: { value: new THREE.Vector2(size.width / size.height / zoom, 1 / zoom) },
         u_offset: { value: new THREE.Vector2(offset[0], offset[1]) },
         u_max_iterations: { value: maxIterations },
         u_palette: { value: PALETTE_MAP[palette] },
-      }) as const satisfies THREE.ShaderMaterialProperties['uniforms'],
+      }) satisfies THREE.ShaderMaterialProperties['uniforms'],
     []
   );
 
@@ -41,11 +41,12 @@ export function FractalMesh() {
   useFrame(() => {
     if (!materialRef.current) return;
 
-    materialRef.current.uniforms.u_resolution.value.set(size.width, size.height);
-    materialRef.current.uniforms.u_offset.value.set(offset[0], offset[1]);
-    materialRef.current.uniforms.u_zoom.value = zoom;
-    materialRef.current.uniforms.u_max_iterations.value = maxIterations;
-    materialRef.current.uniforms.u_palette.value = PALETTE_MAP[palette];
+    const uniforms = materialRef.current.uniforms as typeof initUniforms;
+    uniforms.u_offset.value.set(offset[0], offset[1]);
+    uniforms.u_max_iterations.value = maxIterations;
+    uniforms.u_palette.value = PALETTE_MAP[palette];
+    const texelScale = 1 / zoom;
+    uniforms.u_scale.value.set(texelScale * (size.width / size.height), texelScale);
   });
 
   return (
@@ -56,7 +57,7 @@ export function FractalMesh() {
         ref={materialRef}
         vertexShader={vertShader}
         fragmentShader={fragShader}
-        uniforms={uniforms}
+        uniforms={initUniforms}
         depthWrite={false}
         depthTest={false}
       />
