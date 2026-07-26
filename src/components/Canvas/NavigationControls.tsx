@@ -1,11 +1,11 @@
 import { useFrame, useThree } from '@react-three/fiber';
-import { useAtom, useAtomValue } from 'jotai';
+import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import { useEffect, useRef } from 'react';
 
 import { moveSpeedAtom, offsetAtom, zoomAtom } from '@/store/fractalStore';
 
 export function NavigationControls() {
-  const [_, setOffset] = useAtom(offsetAtom);
+  const setOffset = useSetAtom(offsetAtom);
   const [zoom, setZoom] = useAtom(zoomAtom);
   const moveSpeed = useAtomValue(moveSpeedAtom);
 
