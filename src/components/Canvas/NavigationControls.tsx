@@ -5,7 +5,7 @@ import { useEffect, useRef } from 'react';
 import { moveSpeedAtom, offsetAtom, zoomAtom } from '@/store/fractalStore';
 
 export function NavigationControls() {
-  const [offset, setOffset] = useAtom(offsetAtom);
+  const [_, setOffset] = useAtom(offsetAtom);
   const [zoom, setZoom] = useAtom(zoomAtom);
   const moveSpeed = useAtomValue(moveSpeedAtom);
 
