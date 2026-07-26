@@ -11,7 +11,7 @@ const DEFAULT_STATE: {
 } = {
   offset: [-0.5, 0.0], // Центрируем по умолчанию на интересную часть множества
   zoom: 1.0,
-  maxIterations: 150,
+  maxIterations: 400,
   palette: 'electric',
   moveSpeed: 1.5,
 };

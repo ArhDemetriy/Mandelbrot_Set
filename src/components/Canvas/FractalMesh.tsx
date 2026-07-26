@@ -3,8 +3,8 @@ import { useAtomValue } from 'jotai';
 import { useMemo, useRef } from 'react';
 import * as THREE from 'three';
 
-import fragShader from '@/shaders/mandelbrot.frag?raw';
-import vertShader from '@/shaders/mandelbrot.vert?raw';
+import fragShader from '@/shaders/mandelbrot/2D/mandelbrotF32.frag?raw';
+import vertShader from '@/shaders/mandelbrot/mandelbrot.vert?raw';
 import { type ColorPalette, maxIterationsAtom, offsetAtom, paletteAtom, zoomAtom } from '@/store/fractalStore';
 
 const log2 = Math.log(2);
@@ -93,10 +93,10 @@ export function FractalMesh() {
 
   return (
     <mesh>
-      {/* Плоскость 2x2 перекрывает весь viewport ортографической или перспективной камеры */}
       <planeGeometry args={[2, 2]} />
       <shaderMaterial
         ref={materialRef}
+        glslVersion={THREE.GLSL3}
         vertexShader={vertShader}
         fragmentShader={fragShader}
         uniforms={initUniforms}

@@ -47,8 +47,8 @@ export function ControlPanel() {
             </div>
             <Slider
               value={[maxIterations]}
-              min={20}
-              max={1000}
+              min={100}
+              max={4000}
               step={10}
               onValueChange={val => setMaxIterations(Array.isArray(val) ? val[0] : val)}
             />
@@ -57,16 +57,16 @@ export function ControlPanel() {
           {/* Цветовая палитра */}
           <div className="space-y-2">
             <Label className="text-xs text-muted-foreground">Цветовая палитра</Label>
-            <Select value={palette} onValueChange={val => setPalette(val as ColorPalette)}>
+            <Select value={palette} onValueChange={val => val && setPalette(val)}>
               <SelectTrigger className="h-9 w-full">
                 <SelectValue placeholder="Выберите палитру" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="electric">Electric Blue</SelectItem>
-                <SelectItem value="fire">Fire & Magma</SelectItem>
-                <SelectItem value="classic">Classic Smooth</SelectItem>
-                <SelectItem value="psychedelic">Psychedelic</SelectItem>
-                <SelectItem value="monochrome">Monochrome</SelectItem>
+                <SelectItem value={'electric' satisfies ColorPalette}>Electric Blue</SelectItem>
+                <SelectItem value={'fire' satisfies ColorPalette}>Fire & Magma</SelectItem>
+                <SelectItem value={'classic' satisfies ColorPalette}>Classic Smooth</SelectItem>
+                <SelectItem value={'psychedelic' satisfies ColorPalette}>Psychedelic</SelectItem>
+                <SelectItem value={'monochrome' satisfies ColorPalette}>Monochrome</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -81,7 +81,7 @@ export function ControlPanel() {
               <span className="font-mono text-xs font-medium">{moveSpeed.toFixed(1)}x</span>
             </div>
             <Slider
-              value={[moveSpeed]}
+              value={moveSpeed}
               min={0.2}
               max={5.0}
               step={0.1}
