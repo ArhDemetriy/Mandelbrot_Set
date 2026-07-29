@@ -37,6 +37,11 @@ export function FractalMesh() {
       u_scale: { value: new THREE.Vector2(texelScale * (pWidth / pHeight), texelScale) },
       u_offset: { value: new THREE.Vector2(offset[0], offset[1]) },
       u_max_iterations: { value: maxIterations },
+      u_prev_iterations: { value: 0 },
+
+      u_prev_color: { value: undefined as THREE.Texture | undefined },
+      u_prev_mask: { value: undefined as THREE.Texture | undefined },
+
       u_palette_a: { value: paletteMap.a },
       u_palette_b: { value: paletteMap.b },
       u_palette_c: { value: paletteMap.c },
@@ -51,6 +56,7 @@ export function FractalMesh() {
   useEffect(() => {
     if (!materialRef.current?.uniforms) return;
     const uniforms = materialRef.current.uniforms as typeof initUniforms;
+    uniforms.u_prev_iterations.value = 0;
 
     uniforms.u_palette_a.value = paletteMap.a;
     uniforms.u_palette_b.value = paletteMap.b;
@@ -61,6 +67,7 @@ export function FractalMesh() {
   useEffect(() => {
     if (!materialRef.current?.uniforms) return;
     const uniforms = materialRef.current.uniforms as typeof initUniforms;
+    uniforms.u_prev_iterations.value = 0;
 
     uniforms.u_offset.value.set(offset[0], offset[1]);
   }, [offset, materialRef]);
@@ -68,6 +75,7 @@ export function FractalMesh() {
   useEffect(() => {
     if (!materialRef.current?.uniforms) return;
     const uniforms = materialRef.current.uniforms as typeof initUniforms;
+    uniforms.u_prev_iterations.value = 0;
 
     uniforms.u_max_iterations.value = maxIterations;
   }, [maxIterations, materialRef]);
@@ -75,6 +83,7 @@ export function FractalMesh() {
   useEffect(() => {
     if (!materialRef.current?.uniforms) return;
     const uniforms = materialRef.current.uniforms as typeof initUniforms;
+    uniforms.u_prev_iterations.value = 0;
 
     const texelScale = 1 / zoom;
     uniforms.u_scale.value.set(texelScale * viewport.aspect, texelScale);
@@ -82,16 +91,16 @@ export function FractalMesh() {
 
   // render
 
-  const mrtBuffer = useMemo(() => {
-    const target = new THREE.WebGLRenderTarget(pWidth, pHeight, {
+  const buffers = useMemo(() => {
+    const config = {
       count: 2,
       minFilter: THREE.NearestFilter,
       magFilter: THREE.NearestFilter,
       type: THREE.FloatType,
-    });
-
-    return target;
+    } satisfies THREE.RenderTargetOptions;
+    return [new THREE.WebGLRenderTarget(pWidth, pHeight, config), new THREE.WebGLRenderTarget(pWidth, pHeight, config)];
   }, [pWidth, pHeight]);
+  const indexCurrentBuffer = useRef(0);
 
   const {
     0: { screenScene, screenCamera, screenMaterial },
@@ -102,7 +111,7 @@ export function FractalMesh() {
     const screenMaterial = new THREE.ShaderMaterial({
       glslVersion: THREE.GLSL3,
       uniforms: {
-        tColor: { value: mrtBuffer.textures[0] },
+        tColor: { value: buffers[indexCurrentBuffer.current].textures.at(0) },
       },
       vertexShader: `
         out vec2 vUv;
@@ -128,14 +137,31 @@ export function FractalMesh() {
   });
   useEffect(() => {
     if (!screenMaterial.uniforms?.tColor) return;
-    screenMaterial.uniforms.tColor.value = mrtBuffer.textures[0];
+    screenMaterial.uniforms.tColor.value = buffers[indexCurrentBuffer.current].textures.at(0);
     screenMaterial.needsUpdate = true;
-  }, [mrtBuffer, screenMaterial]);
+  }, [buffers, screenMaterial]);
 
   useFrame(() => {
-    gl.setRenderTarget(mrtBuffer);
+    if (!materialRef.current?.uniforms) return;
+
+    const readBuffer = buffers[indexCurrentBuffer.current];
+    indexCurrentBuffer.current = 1 - indexCurrentBuffer.current;
+    const writeBuffer = buffers[indexCurrentBuffer.current];
+
+    const uniforms = materialRef.current.uniforms as typeof initUniforms;
+    uniforms.u_prev_color.value = readBuffer.textures.at(0);
+    uniforms.u_prev_mask.value = readBuffer.textures.at(1);
+
+    gl.setRenderTarget(writeBuffer);
     gl.render(scene, camera);
+
+    uniforms.u_prev_iterations.value += uniforms.u_max_iterations.value;
+
     gl.setRenderTarget(null);
+    if (screenMaterial.uniforms?.tColor) {
+      screenMaterial.uniforms.tColor.value = writeBuffer.textures.at(0);
+      screenMaterial.needsUpdate = true;
+    }
     gl.render(screenScene, screenCamera);
   }, 1);
 

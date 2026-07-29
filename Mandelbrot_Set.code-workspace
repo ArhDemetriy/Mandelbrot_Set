@@ -6,6 +6,6 @@
   ],
   "settings": {
     "typescript.tsdk": "node_modules/typescript/lib",
-    "cSpell.words": ["fract"],
+    "cSpell.words": ["fract", "PREC"],
   },
 }
