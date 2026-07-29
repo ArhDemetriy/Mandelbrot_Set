@@ -36,12 +36,8 @@ void main() {
         if((v0.x + v0.y) > 4.0) {
             float t = getSmoothIter(v0, float(i)) / 30.0;
 
-            vec3 srgbColor = getPaletteColor(t);
-            vec3 linearColor = pow(srgbColor, vec3(2.2));
-
             // Точка улетела в бесконечность
-            pc_Color = vec4(srgbColor, 1.0);
-            // pc_Color = vec4(linearColor, 1.0);
+            pc_Color = vec4(getPaletteColor(t), 1.0);
             pc_Mask = vec4(0.0, 0.0, 0.0, 1.0); // В маске пиксель не принадлежит черной части
             return;
         }

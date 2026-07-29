@@ -79,16 +79,8 @@ export function FractalMesh() {
       count: 2,
       minFilter: THREE.NearestFilter,
       magFilter: THREE.NearestFilter,
-      // type: THREE.FloatType,
+      type: THREE.FloatType,
     });
-
-    // ВАЖНО: Указываем правильное цветовое пространство для текстуры цвета
-    // Three.js автоматически применит гамму при выводе этой текстуры на экран
-    // target.textures[0].colorSpace = THREE.NoColorSpace;
-
-    // Текстуру маски [1] оставляем в NoColorSpace (или LinearSRGBColorSpace),
-    // так как там лежат сырые математические данные/координаты, а не цвета
-    // target.textures[1].colorSpace = THREE.NoColorSpace;
 
     return target;
   }, [size]);
@@ -98,32 +90,46 @@ export function FractalMesh() {
   } = useState(() => {
     const screenScene = new THREE.Scene();
     const screenCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
-    const screenMaterial = new THREE.MeshBasicMaterial({
-      map: mrtBuffer.textures[0],
+
+    const screenMaterial = new THREE.ShaderMaterial({
+      glslVersion: THREE.GLSL3,
+      uniforms: {
+        tColor: { value: mrtBuffer.textures[0] },
+      },
+      vertexShader: `
+        out vec2 vUv;
+        void main() {
+          vUv = uv;
+          gl_Position = vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        uniform sampler2D tColor;
+        in vec2 vUv;
+        out vec4 fragColor;
+        void main() {
+          fragColor = texture(tColor, vUv);
+        }
+      `,
+      toneMapped: false,
     });
+
     const quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), screenMaterial);
     screenScene.add(quad);
     return { screenScene, screenCamera, screenMaterial };
   });
   useEffect(() => {
-    screenMaterial.map = mrtBuffer.textures.at(0) ?? null;
-    // if (screenMaterial.map) {
-    //   screenMaterial.map.colorSpace = THREE.SRGBColorSpace;
-    // }
+    if (!screenMaterial.uniforms?.tColor) return;
+    screenMaterial.uniforms.tColor.value = mrtBuffer.textures[0];
     screenMaterial.needsUpdate = true;
-  }, [mrtBuffer]);
+  }, [mrtBuffer, screenMaterial]);
 
   useFrame(() => {
     gl.setRenderTarget(mrtBuffer);
     gl.render(scene, camera);
     gl.setRenderTarget(null);
     gl.clear();
-
-    // цвета корректны
-    gl.render(scene, camera);
-
-    // цвета как будто высвечены. более светлые, бледные и с меньшим диапазоном. Эффект как от выгоревшей на солнце краски.
-    // gl.render(screenScene, screenCamera);
+    gl.render(screenScene, screenCamera);
   }, 1);
 
   return (
@@ -135,7 +141,6 @@ export function FractalMesh() {
         vertexShader={vertShader}
         fragmentShader={fragShader}
         uniforms={initUniforms}
-        toneMapped={false}
       />
     </mesh>
   );
