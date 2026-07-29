@@ -12,9 +12,17 @@ const TWO_PI = 2.0 * Math.PI;
 
 export function FractalMesh() {
   const materialRef = useRef<THREE.ShaderMaterial>(null);
-  const { gl, size, scene, camera } = useThree();
+  const { gl, size, viewport, scene, camera } = useThree();
 
   // state
+
+  const { pWidth, pHeight } = useMemo(
+    () => ({
+      pWidth: Math.round(size.width * window.devicePixelRatio),
+      pHeight: Math.round(size.height * window.devicePixelRatio),
+    }),
+    [size]
+  );
 
   const offset = useAtomValue(offsetAtom);
   const zoom = useAtomValue(zoomAtom);
@@ -26,7 +34,7 @@ export function FractalMesh() {
   const { 0: initUniforms } = useState(() => {
     const texelScale = 1 / zoom;
     return {
-      u_scale: { value: new THREE.Vector2(texelScale * (size.width / size.height), texelScale) },
+      u_scale: { value: new THREE.Vector2(texelScale * (pWidth / pHeight), texelScale) },
       u_offset: { value: new THREE.Vector2(offset[0], offset[1]) },
       u_max_iterations: { value: maxIterations },
       u_palette_a: { value: paletteMap.a },
@@ -69,13 +77,13 @@ export function FractalMesh() {
     const uniforms = materialRef.current.uniforms as typeof initUniforms;
 
     const texelScale = 1 / zoom;
-    uniforms.u_scale.value.set(texelScale * (size.width / size.height), texelScale);
-  }, [zoom, size, materialRef]);
+    uniforms.u_scale.value.set(texelScale * viewport.aspect, texelScale);
+  }, [zoom, viewport.aspect, materialRef]);
 
   // render
 
   const mrtBuffer = useMemo(() => {
-    const target = new THREE.WebGLRenderTarget(size.width, size.height, {
+    const target = new THREE.WebGLRenderTarget(pWidth, pHeight, {
       count: 2,
       minFilter: THREE.NearestFilter,
       magFilter: THREE.NearestFilter,
@@ -83,7 +91,7 @@ export function FractalMesh() {
     });
 
     return target;
-  }, [size]);
+  }, [pWidth, pHeight]);
 
   const {
     0: { screenScene, screenCamera, screenMaterial },
@@ -128,7 +136,6 @@ export function FractalMesh() {
     gl.setRenderTarget(mrtBuffer);
     gl.render(scene, camera);
     gl.setRenderTarget(null);
-    gl.clear();
     gl.render(screenScene, screenCamera);
   }, 1);
 
