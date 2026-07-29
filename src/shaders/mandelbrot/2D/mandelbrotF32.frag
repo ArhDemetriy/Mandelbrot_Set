@@ -2,9 +2,8 @@ precision highp float;
 
 in vec2 vUv;
 
-// Объявляем два вывода для MRT
-layout(location = 0) out vec4 pc_Color; // Текстура 1: Полноцветный фрактал
-layout(location = 1) out vec4 pc_Mask;  // Текстура 2: Маска невылетевших точек (черная часть)
+layout(location = 0) out vec4 pc_Color;
+layout(location = 1) out vec4 pc_Mask;
 
 uniform vec3 u_const;
 uniform vec2 u_scale;
@@ -14,6 +13,10 @@ uniform vec3 u_palette_a;
 uniform vec3 u_palette_b;
 uniform vec3 u_palette_c;
 uniform vec3 u_palette_d;
+
+#define NEVER 0.0
+#define INF_ESC -1.0
+#define PREC_ERR -2.0
 
 vec3 getPaletteColor(float t) {
     return u_palette_a + u_palette_b * cos(u_const.x * fract(u_palette_c * t) + u_palette_d);
@@ -28,27 +31,25 @@ void main() {
     vec2 c = (vUv - 0.5) * u_scale + u_offset;
     vec2 z = vec2(0.0);
 
-    for(int i = 0; i < 5000; i++) {
-        if(i >= u_max_iterations)
-            break;
-
+    for(int i = 0; i < u_max_iterations; i++) {
         vec2 v0 = z * z;
         if((v0.x + v0.y) > 4.0) {
             float t = getSmoothIter(v0, float(i)) / 30.0;
-
-            // Точка улетела в бесконечность
             pc_Color = vec4(getPaletteColor(t), 1.0);
-            pc_Mask = vec4(0.0, 0.0, 0.0, 1.0); // В маске пиксель не принадлежит черной части
+            pc_Mask = vec4(INF_ESC, float(i), NEVER, NEVER);
             return;
         }
 
         vec2 currentZ = vec2((v0.x - v0.y), 2.0 * z.x * z.y) + c;
-        if(currentZ == z)
-            break;
+        if(distance(z, currentZ) == 0.0) {
+            pc_Color = vec4(0.0, 0.0, 0.0, 1.0);
+            pc_Mask = vec4(PREC_ERR, NEVER, NEVER, NEVER);
+            return;
+        }
+
         z = currentZ;
     }
 
-    // Точка не дошла до определения цвета (осталась внутри множества)
     pc_Color = vec4(0.0, 0.0, 0.0, 1.0);
-    pc_Mask = vec4(1.0, 1.0, 1.0, 1.0); // Записываем 1.0 (белая маска черной области)
+    pc_Mask = vec4(z, 1.0, 1.0);
 }
