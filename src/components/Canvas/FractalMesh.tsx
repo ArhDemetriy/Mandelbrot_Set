@@ -1,6 +1,6 @@
-import { useThree } from '@react-three/fiber';
+import { useFrame, useThree } from '@react-three/fiber';
 import { useAtomValue } from 'jotai';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 
 import fragShader from '@/shaders/mandelbrot/2D/mandelbrotF32.frag?raw';
@@ -12,15 +12,17 @@ const TWO_PI = 2.0 * Math.PI;
 
 export function FractalMesh() {
   const materialRef = useRef<THREE.ShaderMaterial>(null);
-  const { size } = useThree();
+  const { gl, size, scene, camera } = useThree();
 
-  // Получаем актуальные параметры из Jotai
+  // state
+
   const offset = useAtomValue(offsetAtom);
   const zoom = useAtomValue(zoomAtom);
   const maxIterations = useAtomValue(maxIterationsAtom);
   const paletteMap = useAtomValue(paletteMapAtom);
 
-  // Инициализируем uniforms один раз
+  // uniforms
+
   const { 0: initUniforms } = useState(() => {
     const texelScale = 1 / zoom;
     return {
@@ -70,6 +72,60 @@ export function FractalMesh() {
     uniforms.u_scale.value.set(texelScale * (size.width / size.height), texelScale);
   }, [zoom, size, materialRef]);
 
+  // render
+
+  const mrtBuffer = useMemo(() => {
+    const target = new THREE.WebGLRenderTarget(size.width, size.height, {
+      count: 2,
+      minFilter: THREE.NearestFilter,
+      magFilter: THREE.NearestFilter,
+      // type: THREE.FloatType,
+    });
+
+    // ВАЖНО: Указываем правильное цветовое пространство для текстуры цвета
+    // Three.js автоматически применит гамму при выводе этой текстуры на экран
+    // target.textures[0].colorSpace = THREE.NoColorSpace;
+
+    // Текстуру маски [1] оставляем в NoColorSpace (или LinearSRGBColorSpace),
+    // так как там лежат сырые математические данные/координаты, а не цвета
+    // target.textures[1].colorSpace = THREE.NoColorSpace;
+
+    return target;
+  }, [size]);
+
+  const {
+    0: { screenScene, screenCamera, screenMaterial },
+  } = useState(() => {
+    const screenScene = new THREE.Scene();
+    const screenCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+    const screenMaterial = new THREE.MeshBasicMaterial({
+      map: mrtBuffer.textures[0],
+    });
+    const quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), screenMaterial);
+    screenScene.add(quad);
+    return { screenScene, screenCamera, screenMaterial };
+  });
+  useEffect(() => {
+    screenMaterial.map = mrtBuffer.textures.at(0) ?? null;
+    // if (screenMaterial.map) {
+    //   screenMaterial.map.colorSpace = THREE.SRGBColorSpace;
+    // }
+    screenMaterial.needsUpdate = true;
+  }, [mrtBuffer]);
+
+  useFrame(() => {
+    gl.setRenderTarget(mrtBuffer);
+    gl.render(scene, camera);
+    gl.setRenderTarget(null);
+    gl.clear();
+
+    // цвета корректны
+    gl.render(scene, camera);
+
+    // цвета как будто высвечены. более светлые, бледные и с меньшим диапазоном. Эффект как от выгоревшей на солнце краски.
+    // gl.render(screenScene, screenCamera);
+  }, 1);
+
   return (
     <mesh>
       <planeGeometry args={[2, 2]} />
@@ -79,6 +135,7 @@ export function FractalMesh() {
         vertexShader={vertShader}
         fragmentShader={fragShader}
         uniforms={initUniforms}
+        toneMapped={false}
       />
     </mesh>
   );
