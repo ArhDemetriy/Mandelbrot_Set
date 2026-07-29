@@ -1,4 +1,5 @@
 import { atom } from 'jotai';
+import * as THREE from 'three';
 
 export type ColorPalette = 'classic' | 'fire' | 'electric' | 'psychedelic' | 'monochrome';
 
@@ -12,7 +13,7 @@ const DEFAULT_STATE: {
   offset: [-0.5, 0.0], // Центрируем по умолчанию на интересную часть множества
   zoom: 1.0,
   maxIterations: 400,
-  palette: 'electric',
+  palette: 'classic',
   moveSpeed: 1.5,
 };
 
@@ -31,4 +32,46 @@ export const moveSpeedAtom = atom(DEFAULT_STATE.moveSpeed);
 export const resetViewAtom = atom(null, (_get, set) => {
   set(offsetAtom, DEFAULT_STATE.offset);
   set(zoomAtom, DEFAULT_STATE.zoom);
+});
+
+const TWO_PI = 2.0 * Math.PI;
+export const paletteMapAtom = atom(get => {
+  switch (get(paletteAtom)) {
+    case 'fire':
+      return {
+        a: new THREE.Vector3(0.5, 0.5, 0.5),
+        b: new THREE.Vector3(0.5, 0.5, 0.5),
+        c: new THREE.Vector3(2.0, 1.0, 0.0),
+        d: new THREE.Vector3(0.5 * TWO_PI, 0.2 * TWO_PI, 0.25 * TWO_PI),
+      };
+    case 'electric':
+      return {
+        a: new THREE.Vector3(0.8, 0.5, 0.4),
+        b: new THREE.Vector3(0.2, 0.4, 0.2),
+        c: new THREE.Vector3(2.0, 1.0, 1.0),
+        d: new THREE.Vector3(0.0, 0.25 * TWO_PI, 0.25 * TWO_PI),
+      };
+    case 'psychedelic':
+      return {
+        a: new THREE.Vector3(0.5, 0.5, 0.5),
+        b: new THREE.Vector3(0.5, 0.5, 0.5),
+        c: new THREE.Vector3(2.0, 2.0, 1.0),
+        d: new THREE.Vector3(0.0, 0.1 * TWO_PI, 0.2 * TWO_PI),
+      };
+    case 'monochrome':
+      return {
+        a: new THREE.Vector3(0.5, 0.5, 0.5),
+        b: new THREE.Vector3(0.5, 0.5, 0.5),
+        c: new THREE.Vector3(1.0, 1.0, 1.0),
+        d: new THREE.Vector3(0.0, 0.0, 0.0),
+      };
+    case 'classic':
+    default:
+      return {
+        a: new THREE.Vector3(0.5, 0.5, 0.5),
+        b: new THREE.Vector3(0.5, 0.5, 0.5),
+        c: new THREE.Vector3(1.0, 1.0, 1.0),
+        d: new THREE.Vector3(0.0, 0.33 * TWO_PI, 0.67 * TWO_PI),
+      };
+  }
 });
