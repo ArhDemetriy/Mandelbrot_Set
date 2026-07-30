@@ -158,10 +158,9 @@ export function FractalMesh() {
     uniforms.u_prev_iterations.value += uniforms.u_max_iterations.value;
 
     gl.setRenderTarget(null);
-    if (screenMaterial.uniforms?.tColor) {
-      screenMaterial.uniforms.tColor.value = writeBuffer.textures.at(0);
-      screenMaterial.needsUpdate = true;
-    }
+    if (!screenMaterial.uniforms?.tColor) return;
+    screenMaterial.uniforms.tColor.value = writeBuffer.textures.at(0);
+    screenMaterial.needsUpdate = true;
     gl.render(screenScene, screenCamera);
   }, 1);
 
