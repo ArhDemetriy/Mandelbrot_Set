@@ -3,12 +3,18 @@ import { useAtomValue } from 'jotai';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 
-import fragShader from '@/shaders/mandelbrot/2D/mandelbrotF32.frag?raw';
+import fragF32Shader from '@/shaders/mandelbrot/2D/mandelbrotF32.frag?raw';
 import vertShader from '@/shaders/mandelbrot/mandelbrot.vert?raw';
+import fragPaletteShader from '@/shaders/mandelbrot/mandelbrotPalette.frag?raw';
 import { maxIterationsAtom, offsetAtom, paletteMapAtom, zoomAtom } from '@/store/fractalStore';
 
 const log2 = Math.log(2);
 const TWO_PI = 2.0 * Math.PI;
+
+const EMPTY_TEXTURE = new THREE.DataTexture(new Float32Array([0, 0, 0, 0]), 1, 1, THREE.RGBAFormat, THREE.FloatType);
+EMPTY_TEXTURE.minFilter = THREE.NearestFilter;
+EMPTY_TEXTURE.magFilter = THREE.NearestFilter;
+EMPTY_TEXTURE.needsUpdate = true;
 
 export function FractalMesh() {
   const materialRef = useRef<THREE.ShaderMaterial>(null);
@@ -39,7 +45,7 @@ export function FractalMesh() {
       u_max_iterations: { value: maxIterations },
       u_prev_iterations: { value: 0 },
 
-      u_prev_color: { value: undefined as THREE.Texture | undefined },
+      u_prev_color: { value: EMPTY_TEXTURE },
       u_prev_mask: { value: undefined as THREE.Texture | undefined },
 
       u_palette_a: { value: paletteMap.a },
@@ -98,7 +104,10 @@ export function FractalMesh() {
       magFilter: THREE.NearestFilter,
       type: THREE.FloatType,
     } satisfies THREE.RenderTargetOptions;
-    return [new THREE.WebGLRenderTarget(pWidth, pHeight, config), new THREE.WebGLRenderTarget(pWidth, pHeight, config)];
+    return [
+      new THREE.WebGLRenderTarget<THREE.DataTexture>(pWidth, pHeight, config),
+      new THREE.WebGLRenderTarget<THREE.DataTexture>(pWidth, pHeight, config),
+    ] as const;
   }, [pWidth, pHeight]);
   const indexCurrentBuffer = useRef(0);
 
@@ -111,7 +120,7 @@ export function FractalMesh() {
     const screenMaterial = new THREE.ShaderMaterial({
       glslVersion: THREE.GLSL3,
       uniforms: {
-        tColor: { value: buffers[indexCurrentBuffer.current].textures.at(0) },
+        u_data: { value: buffers[indexCurrentBuffer.current].textures.at(0) },
       },
       vertexShader: `
         out vec2 vUv;
@@ -120,14 +129,7 @@ export function FractalMesh() {
           gl_Position = vec4(position, 1.0);
         }
       `,
-      fragmentShader: `
-        uniform sampler2D tColor;
-        in vec2 vUv;
-        out vec4 fragColor;
-        void main() {
-          fragColor = texture(tColor, vUv);
-        }
-      `,
+      fragmentShader: fragPaletteShader,
       toneMapped: false,
     });
 
@@ -136,8 +138,8 @@ export function FractalMesh() {
     return { screenScene, screenCamera, screenMaterial };
   });
   useEffect(() => {
-    if (!screenMaterial.uniforms?.tColor) return;
-    screenMaterial.uniforms.tColor.value = buffers[indexCurrentBuffer.current].textures.at(0);
+    if (!screenMaterial.uniforms?.u_data) return;
+    screenMaterial.uniforms.u_data.value = buffers[indexCurrentBuffer.current].textures.at(0);
     screenMaterial.needsUpdate = true;
   }, [buffers, screenMaterial]);
 
@@ -149,7 +151,7 @@ export function FractalMesh() {
     const writeBuffer = buffers[indexCurrentBuffer.current];
 
     const uniforms = materialRef.current.uniforms as typeof initUniforms;
-    uniforms.u_prev_color.value = readBuffer.textures.at(0);
+    uniforms.u_prev_color.value = readBuffer.textures[0];
     uniforms.u_prev_mask.value = readBuffer.textures.at(1);
 
     gl.setRenderTarget(writeBuffer);
@@ -158,9 +160,8 @@ export function FractalMesh() {
     uniforms.u_prev_iterations.value += uniforms.u_max_iterations.value;
 
     gl.setRenderTarget(null);
-    if (!screenMaterial.uniforms?.tColor) return;
-    screenMaterial.uniforms.tColor.value = writeBuffer.textures.at(0);
-    screenMaterial.needsUpdate = true;
+    if (!screenMaterial.uniforms?.u_data) return;
+    screenMaterial.uniforms.u_data.value = writeBuffer.textures.at(0);
     gl.render(screenScene, screenCamera);
   }, 1);
 
@@ -171,7 +172,7 @@ export function FractalMesh() {
         ref={materialRef}
         glslVersion={THREE.GLSL3}
         vertexShader={vertShader}
-        fragmentShader={fragShader}
+        fragmentShader={fragF32Shader}
         uniforms={initUniforms}
       />
     </mesh>
