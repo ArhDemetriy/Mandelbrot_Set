@@ -96,12 +96,15 @@ export class MandelbrotEngine {
   }
 
   public reset(gl: THREE.WebGLRenderer) {
+    // if (this.isFullCompute()) return;
+
     this.targets.forEach(target => {
       gl.setRenderTarget(target);
       gl.clear(true, true, true);
     });
     gl.setRenderTarget(null);
     this.readIndex = 0;
+    // this.resetCompute();
   }
 
   protected getTargets() {
@@ -123,6 +126,8 @@ export class MandelbrotEngine {
 
   /** Выполнить 1 шаг накопления фрактала (Ping-Pong) */
   public step(gl: THREE.WebGLRenderer) {
+    // if (this.isFullCompute()) return;
+
     const { readTarget, writeTarget } = this.getTargets();
 
     const uniforms = this.getComputeUniforms();
@@ -134,7 +139,21 @@ export class MandelbrotEngine {
     gl.setRenderTarget(null);
 
     this.switchTargets();
+    // this.incCompute();
   }
+  private frames = 0;
+  private isFullCompute() {
+    return this.frames >= MandelbrotEngine.maxComputedFrames;
+  }
+  private resetCompute() {
+    this.frames = 0;
+  }
+  private incCompute() {
+    this.frames++;
+  }
+
+  private static iterationOnFrame = 50;
+  private static maxComputedFrames = Math.round(10000 / MandelbrotEngine.iterationOnFrame);
 
   protected getComputeUniforms() {
     return this.computeMaterial.uniforms as ReturnType<(typeof MandelbrotEngine)['makeInitComputeUniforms']>;
@@ -217,6 +236,7 @@ void main() {
     initState: THREE.DataTexture;
   }) {
     return {
+      u_const: { value: new THREE.Vector4(MandelbrotEngine.iterationOnFrame) },
       u_view: {
         /** texelScale/height, ...offset */
         value: new THREE.Vector4(zoom / height, ...offset),

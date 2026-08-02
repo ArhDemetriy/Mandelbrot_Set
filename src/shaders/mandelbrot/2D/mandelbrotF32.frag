@@ -5,6 +5,8 @@ layout(location = 0) out vec4 pc_result;
 /** z, iz, dz, diz */
 layout(location = 1) out vec4 pc_state;
 
+/** ITERATION_ON_FRAME */
+uniform vec4 u_const;
 /** texelScale/height, ...offset */
 uniform vec4 u_view;
 /** iteration, dot, status, _ */
@@ -41,7 +43,8 @@ void main() {
 
     vec2 c = gl_FragCoord.xy * u_view.x + u_view.yz;
 
-    for(int i = 0; i < ITERATION_ON_FRAME; i++) {
+    int iterationOnFrame = int(u_const.x);
+    for(int i = 0; i < iterationOnFrame; i++) {
         vec2 v0 = z * z;
         if((v0.x + v0.y) > 4.0) {
             pc_result = vec4(float(prevIterations + i), (v0.x + v0.y), INF_ESC, NEVER);

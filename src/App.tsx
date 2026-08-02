@@ -11,7 +11,7 @@ export function App() {
       <Canvas camera={{ position: [0, 0, 1], fov: 75 }} gl={{ powerPreference: 'high-performance' }}>
         <color attach="background" args={['#000000']} />
         {/* Мониторинг производительности (FPS / GPU) */}
-        <Perf position="top-left" />
+        <Perf position="top-left" minimal />
         <FractalMesh />
         <NavigationControls />
       </Canvas>

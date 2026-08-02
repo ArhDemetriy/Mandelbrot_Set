@@ -6,20 +6,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/shadcn_ui
 import { Label } from '@/components/shadcn_ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/shadcn_ui/select';
 import { Slider } from '@/components/shadcn_ui/slider';
-import {
-  type ColorPalette,
-  maxIterationsAtom,
-  moveSpeedAtom,
-  offsetAtom,
-  paletteAtom,
-  resetViewAtom,
-  zoomAtom,
-} from '@/store/fractalStore';
+import { type ColorPalette, offsetAtom, paletteAtom, resetViewAtom, zoomAtom } from '@/store/fractalStore';
 
 export function ControlPanel() {
-  const [maxIterations, setMaxIterations] = useAtom(maxIterationsAtom);
   const [palette, setPalette] = useAtom(paletteAtom);
-  const [moveSpeed, setMoveSpeed] = useAtom(moveSpeedAtom);
   const [zoom] = useAtom(zoomAtom);
   const [offset] = useAtom(offsetAtom);
   const resetView = useSetAtom(resetViewAtom);
@@ -36,24 +26,6 @@ export function ControlPanel() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-5 text-sm">
-          {/* Настройка итераций */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                <Eye className="h-3.5 w-3.5" />
-                Детализация (Max Iter)
-              </Label>
-              <span className="font-mono text-xs font-medium">{maxIterations}</span>
-            </div>
-            <Slider
-              value={[maxIterations]}
-              min={100}
-              max={4000}
-              step={10}
-              onValueChange={val => setMaxIterations(Array.isArray(val) ? val[0] : val)}
-            />
-          </div>
-
           {/* Цветовая палитра */}
           <div className="space-y-2">
             <Label className="text-xs text-muted-foreground">Цветовая палитра</Label>
@@ -69,24 +41,6 @@ export function ControlPanel() {
                 <SelectItem value={'monochrome' satisfies ColorPalette}>Monochrome</SelectItem>
               </SelectContent>
             </Select>
-          </div>
-
-          {/* Скорость перемещения */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                <Zap className="h-3.5 w-3.5" />
-                Скорость WASD
-              </Label>
-              <span className="font-mono text-xs font-medium">{moveSpeed.toFixed(1)}x</span>
-            </div>
-            <Slider
-              value={moveSpeed}
-              min={0.2}
-              max={5.0}
-              step={0.1}
-              onValueChange={val => setMoveSpeed(Array.isArray(val) ? val[0] : val)}
-            />
           </div>
 
           {/* Текущие координаты и Zoom (только для чтения) */}
