@@ -1,6 +1,5 @@
 precision mediump float;
 
-in vec2 vUv;
 out vec4 pc_color;
 
 uniform vec3 u_const;
@@ -28,7 +27,8 @@ float getSmoothIter(float v, float iter) {
 }
 
 void main() {
-    vec3 data = texture(u_compute_result, vUv).xyz;
+    ivec2 pixelCoord = ivec2(gl_FragCoord.xy);
+    vec3 data = texelFetch(u_compute_result, pixelCoord, 0).xyz;
 
     float status = data.z;
     if(status == PREC_ERR || status == LIM_ESC) {

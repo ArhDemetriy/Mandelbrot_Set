@@ -32,9 +32,9 @@ export function FractalMesh() {
         f32Shader: fragF32Shader,
         paletteShader: fragPaletteShader,
 
-        initWidth: pWidth,
-        initHeight: pHeight,
-        texelScale: 1 / zoom,
+        width: pWidth,
+        height: pHeight,
+        zoom,
         offset,
 
         paletteA: paletteMap.a,
@@ -55,7 +55,7 @@ export function FractalMesh() {
   }, [pWidth, pHeight, zoom, gl, mandelbrotEngine]);
 
   useEffect(() => {
-    mandelbrotEngine.setTexelScale(1 / zoom);
+    mandelbrotEngine.setTexelScale(zoom);
     mandelbrotEngine.reset(gl);
   }, [zoom, gl, mandelbrotEngine]);
 

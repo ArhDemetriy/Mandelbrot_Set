@@ -1,14 +1,14 @@
-import { defineConfig } from "oxlint";
+import { defineConfig } from 'oxlint';
 
 export default defineConfig({
   settings: {
-    next: { rootDir: "./app" },
+    next: { rootDir: './app' },
   },
-  plugins: ["react", "typescript", "promise"],
+  plugins: ['react', 'typescript', 'promise'],
   categories: {
-    correctness: "warn",
+    correctness: 'warn',
   },
   rules: {
-    "eslint/no-unused-vars": "error",
+    'eslint/no-unused-vars': 'error',
   },
 });

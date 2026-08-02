@@ -10,11 +10,11 @@ const DEFAULT_STATE: {
   palette: ColorPalette;
   moveSpeed: number;
 } = {
-  offset: [-0.5, 0.0], // Центрируем по умолчанию на интересную часть множества
+  offset: [-1.5, -0.5],
   zoom: 1.0,
-  maxIterations: 400,
+  maxIterations: 200,
   palette: 'classic',
-  moveSpeed: 1.5,
+  moveSpeed: 1.0,
 };
 
 /** Координаты центра экрана в комплексной плоскости */

@@ -6,9 +6,9 @@ export class MandelbrotEngine {
     f32Shader,
     paletteShader,
 
-    initWidth,
-    initHeight,
-    texelScale,
+    width,
+    height,
+    zoom,
     offset,
 
     paletteA,
@@ -19,9 +19,9 @@ export class MandelbrotEngine {
     gl: THREE.WebGLRenderer;
     f32Shader: string;
     paletteShader: string;
-    initWidth: number;
-    initHeight: number;
-    texelScale: number;
+    width: number;
+    height: number;
+    zoom: number;
     offset: [number, number];
 
     paletteA: THREE.Vector3;
@@ -29,9 +29,11 @@ export class MandelbrotEngine {
     paletteC: THREE.Vector3;
     paletteD: THREE.Vector3;
   }) {
+    this.currentHeight = height;
+    this.currentZoom = zoom;
     this.targets = [
-      new THREE.WebGLRenderTarget(initWidth, initHeight, MandelbrotEngine.getRenderTargetOptions()),
-      new THREE.WebGLRenderTarget(initWidth, initHeight, MandelbrotEngine.getRenderTargetOptions()),
+      new THREE.WebGLRenderTarget(width, height, MandelbrotEngine.getRenderTargetOptions()),
+      new THREE.WebGLRenderTarget(width, height, MandelbrotEngine.getRenderTargetOptions()),
     ];
     this.reset(gl);
 
@@ -43,9 +45,8 @@ export class MandelbrotEngine {
       uniforms: MandelbrotEngine.makeInitComputeUniforms({
         initResult: textures[0],
         initState: textures[1],
-        initWidth,
-        initHeight,
-        texelScale,
+        height,
+        zoom,
         offset,
       }),
     });
@@ -73,28 +74,25 @@ export class MandelbrotEngine {
   }
 
   public setSize(width: number, height: number) {
+    this.currentHeight = height;
     this.targets.forEach(target => target.setSize(width, height));
-    const uScreen = this.getComputeUniforms().u_screen.value;
-    uScreen.setX(width);
-    uScreen.setY(height);
-
-    this.setTexelScale(this.getTexelScale());
+    this.getComputeUniforms().u_view.value.setX(this.getScaleDivHeight());
   }
 
-  public setTexelScale(texelScale: number) {
-    const uScreen = this.getComputeUniforms().u_screen.value;
-    this.getComputeUniforms().u_scale.value.set(
-      texelScale * (uScreen.getComponent(0) / uScreen.getComponent(1)),
-      texelScale
-    );
+  public setTexelScale(zoom: number) {
+    this.currentZoom = zoom;
+    this.getComputeUniforms().u_view.value.setX(this.getScaleDivHeight());
   }
-
-  protected getTexelScale() {
-    return this.getComputeUniforms().u_scale.value.getComponent(1);
+  private currentHeight: number;
+  private currentZoom: number;
+  private getScaleDivHeight() {
+    return 1 / (this.currentHeight * this.currentZoom);
   }
 
   public setOffset(offset: [number, number]) {
-    this.getComputeUniforms().u_offset.value.set(...offset);
+    const { value } = this.getComputeUniforms().u_view;
+    value.setY(offset[0]);
+    value.setZ(offset[1]);
   }
 
   public reset(gl: THREE.WebGLRenderer) {
@@ -199,33 +197,30 @@ export class MandelbrotEngine {
 
   private static getFullScreenVertShader() {
     return `
-out vec2 vUv;
 void main() {
-    vUv = uv;
     gl_Position = vec4(position, 1.0);
 }
 ` as const;
   }
 
   private static makeInitComputeUniforms({
-    texelScale,
-    initWidth,
-    initHeight,
+    zoom,
+    height,
     offset,
     initResult,
     initState,
   }: {
-    texelScale: number;
-    initWidth: number;
-    initHeight: number;
+    zoom: number;
+    height: number;
     offset: [number, number];
     initResult: THREE.DataTexture;
     initState: THREE.DataTexture;
   }) {
     return {
-      u_scale: { value: new THREE.Vector2(texelScale * (initWidth / initHeight), texelScale) },
-      u_offset: { value: new THREE.Vector2(...offset) },
-      u_screen: { value: new THREE.Vector2(initWidth, initHeight) },
+      u_view: {
+        /** texelScale/height, ...offset */
+        value: new THREE.Vector4(zoom / height, ...offset),
+      },
       u_prev_result: { value: initResult } satisfies ReturnType<
         (typeof MandelbrotEngine)['makeInitScreenUniforms']
       >['u_compute_result'],
