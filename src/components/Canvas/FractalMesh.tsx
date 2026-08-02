@@ -9,6 +9,9 @@ import { offsetAtom, paletteMapAtom, zoomAtom } from '@/store/fractalStore';
 
 export function FractalMesh() {
   const { gl, size } = useThree();
+  useEffect(() => {
+    gl.autoClear = false;
+  }, [gl]);
 
   const { pWidth, pHeight } = useMemo(
     () => ({

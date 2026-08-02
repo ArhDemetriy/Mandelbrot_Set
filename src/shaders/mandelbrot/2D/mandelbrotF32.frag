@@ -21,15 +21,9 @@ uniform sampler2D u_prev_state;
 #define INF_ESC -2.0
 #define PREC_ERR -3.0
 
-bool isOutOfBounds(ivec2 pCoord, ivec2 tSize) {
-    return any(lessThan(pCoord, ivec2(0))) || any(greaterThanEqual(pCoord, tSize));
-}
-
 void main() {
-    ivec2 pCoord = ivec2(gl_FragCoord.xy);
-
-    vec4 prevResult = isOutOfBounds(pCoord, textureSize(u_prev_result, 0)) ? vec4(NEVER) : texelFetch(u_prev_result, pCoord, 0);
-    vec4 prevState = isOutOfBounds(pCoord, textureSize(u_prev_state, 0)) ? vec4(NEVER) : texelFetch(u_prev_state, pCoord, 0);
+    vec4 prevResult = texture(u_prev_result, vUv);
+    vec4 prevState = texture(u_prev_state, vUv);
 
     int prevIterations = int(prevResult.x);
 

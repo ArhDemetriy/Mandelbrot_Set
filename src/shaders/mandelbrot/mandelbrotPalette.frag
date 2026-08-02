@@ -31,7 +31,7 @@ void main() {
     vec3 data = texture(u_compute_result, vUv).xyz;
 
     float status = data.z;
-    if(status == PREC_ERR || status == INF_ESC) {
+    if(status == PREC_ERR || status == LIM_ESC) {
         pc_color = vec4(0.0, 0.0, 0.0, 1.0);
         return;
     }
