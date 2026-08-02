@@ -5,7 +5,7 @@ out vec4 pc_color;
 
 uniform vec3 u_const;
 
-/** iteration, distance, status, _ */
+/** iteration, dot, status, _ */
 uniform sampler2D u_compute_result;
 
 uniform vec3 u_palette_a;
@@ -36,8 +36,6 @@ void main() {
         return;
     }
 
-    float iter = data.x;
-    float dist = data.y;
-    float t = getSmoothIter(dot(vUv, vUv), iter) / 30.0;
+    float t = getSmoothIter(data.y, data.x) / 30.0;
     pc_color = vec4(getPaletteColor(t), 1.0);
 }

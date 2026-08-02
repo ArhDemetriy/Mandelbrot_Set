@@ -2,14 +2,14 @@ precision highp float;
 
 in vec2 vUv;
 
-/** iteration, distance, status, _ */
+/** iteration, dot, status, _ */
 layout(location = 0) out vec4 pc_result;
 /** z, iz, dz, diz */
 layout(location = 1) out vec4 pc_state;
 
 uniform vec2 u_scale;
 uniform vec2 u_offset;
-/** iteration, distance, status, _ */
+/** iteration, dot, status, _ */
 uniform sampler2D u_prev_result;
 /** z, iz, dz, diz */
 uniform sampler2D u_prev_state;
@@ -44,14 +44,14 @@ void main() {
     for(int i = 0; i < ITERATION_ON_FRAME; i++) {
         vec2 v0 = z * z;
         if((v0.x + v0.y) > 4.0) {
-            pc_result = vec4(float(prevIterations + i), NEVER, INF_ESC, NEVER);
+            pc_result = vec4(float(prevIterations + i), (v0.x + v0.y), INF_ESC, NEVER);
             pc_state = vec4(z, dz);
             return;
         }
 
         vec2 currentZ = vec2((v0.x - v0.y), 2.0 * z.x * z.y) + c;
         if(distance(z, currentZ) == 0.0) {
-            pc_result = vec4(float(prevIterations + i), NEVER, PREC_ERR, NEVER);
+            pc_result = vec4(float(prevIterations + i), (v0.x + v0.y), PREC_ERR, NEVER);
             pc_state = vec4(z, dz);
             return;
         }
@@ -59,6 +59,6 @@ void main() {
         z = currentZ;
     }
 
-    pc_result = vec4(float(prevIterations + ITERATION_ON_FRAME), NEVER, LIM_ESC, NEVER);
+    pc_result = vec4(float(prevIterations + ITERATION_ON_FRAME), dot(z,z), LIM_ESC, NEVER);
     pc_state = vec4(z, dz);
 }
