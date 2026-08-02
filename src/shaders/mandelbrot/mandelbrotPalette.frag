@@ -6,7 +6,7 @@ out vec4 pc_color;
 uniform vec3 u_const;
 
 /** iteration, distance, status, _ */
-uniform sampler2D u_data;
+uniform sampler2D u_compute_result;
 
 uniform vec3 u_palette_a;
 uniform vec3 u_palette_b;
@@ -28,7 +28,7 @@ float getSmoothIter(float v, float iter) {
 }
 
 void main() {
-    vec3 data = texture(u_data, vUv).xyz;
+    vec3 data = texture(u_compute_result, vUv).xyz;
 
     float status = data.z;
     if(status == PREC_ERR || status == INF_ESC) {
