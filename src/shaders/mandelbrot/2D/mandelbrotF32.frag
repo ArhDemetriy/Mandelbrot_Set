@@ -60,6 +60,10 @@ void main() {
 
     vec2 c = gl_FragCoord.xy * u_view.x + u_offset.xy;
 
+    vec2 checkZ = z;
+    int power = 1;
+    int count = 0;
+
     int iterationOnFrame = int(u_const.x);
     for(int i = 0; i < iterationOnFrame; i++) {
         vec2 v0 = z * z;
@@ -69,14 +73,19 @@ void main() {
             return;
         }
 
-        vec2 currentZ = vec2((v0.x - v0.y), 2.0 * z.x * z.y) + c;
-        if((z == currentZ) || distance(z, currentZ) <= 0.0) {
+        z = vec2((v0.x - v0.y), 2.0 * z.x * z.y) + c;
+        if(z == checkZ) {
             pc_result = vec4(float(prevIterations + i), (v0.x + v0.y), PREC_ERR, NEVER);
             pc_state = vec4(z, dz);
             return;
         }
 
-        z = currentZ;
+        count++;
+        if(count == power) {
+            checkZ = z;
+            power <<= 1;
+            count = 0;
+        }
     }
 
     pc_result = vec4(float(prevIterations + iterationOnFrame), dot(z, z), LIM_ESC, NEVER);
