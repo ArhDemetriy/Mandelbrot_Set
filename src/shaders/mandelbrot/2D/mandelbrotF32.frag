@@ -7,10 +7,10 @@ layout(location = 1) out vec4 pc_state;
 
 /** ITERATION_ON_FRAME, NEVER */
 uniform vec2 u_const;
-/** 1/(zoom*height), width, height */
-uniform vec3 u_view;
-/** ...offset, ...pixelFrameDeltaOffset */
-uniform vec4 u_offset;
+/** 1/(zoom*height) */
+uniform vec2 u_view;
+/** ...offset */
+uniform vec2 u_offset;
 /** iteration, dot, status, NEVER */
 uniform sampler2D u_prev_result;
 /** z, iz, dz, diz */
@@ -21,28 +21,10 @@ uniform sampler2D u_prev_state;
 #define INF_ESC -2.0
 #define PREC_ERR -3.0
 
-ivec3 getNeedInitStateAndSafetyPixelCoord() {
-    vec2 pixelFrameDeltaOffset = vec2(u_offset.zw);
-    ivec2 pixelCoord = ivec2(gl_FragCoord.xy + pixelFrameDeltaOffset);
-    ivec2 textureSize = ivec2(u_view.yz);
-
-    int safeZone = (pixelFrameDeltaOffset.x + pixelFrameDeltaOffset.y) < 0.5 ? 0 : 5;
-    bool isOutOfTexture = (pixelCoord.x < safeZone) || (pixelCoord.y < safeZone) || (pixelCoord.x >= textureSize.x - safeZone) || (pixelCoord.y >= textureSize.y - safeZone);
-    return ivec3(int(isOutOfTexture), pixelCoord);
-}
-
 void main() {
-    ivec3 needInitStateAndSafetyPixelCoord = getNeedInitStateAndSafetyPixelCoord();
-    vec4 prevResult;
-    vec4 prevState;
-    if(bool(needInitStateAndSafetyPixelCoord.x)) {
-        prevResult = vec4(NEVER);
-        prevState = vec4(NEVER);
-    } else {
-        ivec2 safetyPixelCoord = needInitStateAndSafetyPixelCoord.yz;
-        prevResult = texelFetch(u_prev_result, safetyPixelCoord, 0);
-        prevState = texelFetch(u_prev_state, safetyPixelCoord, 0);
-    }
+    ivec2 pixelCoord = ivec2(gl_FragCoord.xy);
+    vec4 prevResult = texelFetch(u_prev_result, pixelCoord, 0);
+    vec4 prevState = texelFetch(u_prev_state, pixelCoord, 0);
 
     int prevIterations = int(prevResult.x);
 
