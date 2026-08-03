@@ -5,6 +5,7 @@ import vertexShader from '@/shaders/mandelbrot/mandelbrot.vert?raw';
 export class MandelbrotEngine {
   constructor({
     gl,
+    invalidate,
     f32Shader,
     paletteShader,
 
@@ -19,6 +20,7 @@ export class MandelbrotEngine {
     paletteD,
   }: {
     gl: THREE.WebGLRenderer;
+    invalidate: (frames?: number | undefined) => void;
     f32Shader: string;
     paletteShader: string;
     width: number;
@@ -34,6 +36,7 @@ export class MandelbrotEngine {
     this.currentHeight = height;
     this.currentZoom = zoom;
     this.gl = gl;
+    this.invalidate = invalidate;
     this.targets = [
       new THREE.WebGLRenderTarget(width, height, MandelbrotEngine.getRenderTargetOptions()),
       new THREE.WebGLRenderTarget(width, height, MandelbrotEngine.getRenderTargetOptions()),
@@ -75,6 +78,11 @@ export class MandelbrotEngine {
     this.screenScene = new THREE.Scene();
     this.screenScene.add(new THREE.Mesh(quadGeometry, this.screenMaterial));
     this.screenCamera = MandelbrotEngine.makeOrthographicCamera();
+    this.invalidate();
+  }
+  private invalidate: (frames?: number | undefined) => void;
+  public setInvalidate(invalidate: (frames?: number | undefined) => void) {
+    this.invalidate = invalidate;
   }
 
   public setSize(width: number, height: number) {
@@ -86,6 +94,7 @@ export class MandelbrotEngine {
     u_view.setZ(height);
     this.resetPixelDeltaOffset();
     this.reset();
+    this.invalidate();
   }
 
   public setZoom(zoom: number) {
@@ -93,6 +102,7 @@ export class MandelbrotEngine {
     this.getComputeUniforms().u_view.value.setX(this.getDivScaleHeight());
     this.resetPixelDeltaOffset();
     this.reset();
+    this.invalidate();
   }
   private currentHeight: number;
   private currentZoom: number;
@@ -105,6 +115,7 @@ export class MandelbrotEngine {
     const k = this.currentZoom * this.currentHeight;
     uOffset.set(X, Y, k * (X - uOffset.x), k * (Y - uOffset.y));
     this.resetCompute();
+    this.invalidate();
   }
   private resetPixelDeltaOffset() {
     const { value: uOffset } = this.getComputeUniforms().u_offset;
@@ -112,7 +123,7 @@ export class MandelbrotEngine {
     uOffset.setW(0);
   }
 
-  public reset() {
+  private reset() {
     this.targets.forEach(target => {
       this.gl.setRenderTarget(target);
       this.gl.clear(true, true, true);
@@ -156,6 +167,7 @@ export class MandelbrotEngine {
     this.resetPixelDeltaOffset();
     this.switchTargets();
     this.incCompute();
+    this.invalidate();
   }
   private frames = 0;
   private isFullCompute() {
@@ -193,6 +205,7 @@ export class MandelbrotEngine {
     screenUniforms.u_palette_b.value = paletteB;
     screenUniforms.u_palette_c.value = paletteC;
     screenUniforms.u_palette_d.value = paletteD;
+    this.invalidate();
   }
 
   public renderScreen() {
