@@ -31,11 +31,12 @@ export class MandelbrotEngine {
   }) {
     this.currentHeight = height;
     this.currentZoom = zoom;
+    this.gl = gl;
     this.targets = [
       new THREE.WebGLRenderTarget(width, height, MandelbrotEngine.getRenderTargetOptions()),
       new THREE.WebGLRenderTarget(width, height, MandelbrotEngine.getRenderTargetOptions()),
     ];
-    this.reset(gl);
+    this.reset();
 
     const { textures } = this.getTargets().readTarget;
     this.computeMaterial = new THREE.ShaderMaterial({
@@ -77,11 +78,13 @@ export class MandelbrotEngine {
     this.currentHeight = height;
     this.targets.forEach(target => target.setSize(width, height));
     this.getComputeUniforms().u_view.value.setX(this.getScaleDivHeight());
+    this.reset();
   }
 
   public setTexelScale(zoom: number) {
     this.currentZoom = zoom;
     this.getComputeUniforms().u_view.value.setX(this.getScaleDivHeight());
+    this.reset();
   }
   private currentHeight: number;
   private currentZoom: number;
@@ -93,18 +96,19 @@ export class MandelbrotEngine {
     const { value } = this.getComputeUniforms().u_view;
     value.setY(offset[0]);
     value.setZ(offset[1]);
+    this.reset();
   }
 
-  public reset(gl: THREE.WebGLRenderer) {
+  public reset() {
     // if (this.isFullCompute()) return;
 
     this.targets.forEach(target => {
-      gl.setRenderTarget(target);
-      gl.clear(true, true, true);
+      this.gl.setRenderTarget(target);
+      this.gl.clear(true, true, true);
     });
-    gl.setRenderTarget(null);
+    this.gl.setRenderTarget(null);
     this.readIndex = 0;
-    // this.resetCompute();
+    this.resetCompute();
   }
 
   protected getTargets() {
@@ -125,7 +129,7 @@ export class MandelbrotEngine {
   // управление рендером
 
   /** Выполнить 1 шаг накопления фрактала (Ping-Pong) */
-  public step(gl: THREE.WebGLRenderer) {
+  public step() {
     // if (this.isFullCompute()) return;
 
     const { readTarget, writeTarget } = this.getTargets();
@@ -134,20 +138,22 @@ export class MandelbrotEngine {
     uniforms.u_prev_result.value = readTarget.textures[0];
     uniforms.u_prev_state.value = readTarget.textures[1];
 
-    gl.setRenderTarget(writeTarget);
-    gl.render(this.computeScene, this.computeCamera);
-    gl.setRenderTarget(null);
+    this.gl.setRenderTarget(writeTarget);
+    this.gl.render(this.computeScene, this.computeCamera);
+    this.gl.setRenderTarget(null);
 
     this.switchTargets();
     // this.incCompute();
   }
   private frames = 0;
+  // @ts-ignore
   private isFullCompute() {
     return this.frames >= MandelbrotEngine.maxComputedFrames;
   }
   private resetCompute() {
     this.frames = 0;
   }
+  // @ts-ignore
   private incCompute() {
     this.frames++;
   }
@@ -179,12 +185,12 @@ export class MandelbrotEngine {
     screenUniforms.u_palette_d.value = paletteD;
   }
 
-  public renderScreen(gl: THREE.WebGLRenderer) {
+  public renderScreen() {
     const uniforms = this.getScreenUniforms();
     uniforms.u_compute_result.value = this.getTargets().readTarget.textures[0];
 
-    gl.setRenderTarget(null);
-    gl.render(this.screenScene, this.screenCamera);
+    this.gl.setRenderTarget(null);
+    this.gl.render(this.screenScene, this.screenCamera);
   }
 
   protected getScreenUniforms() {
@@ -200,6 +206,11 @@ export class MandelbrotEngine {
   }
   private computeMaterial: THREE.ShaderMaterial;
   private screenMaterial: THREE.ShaderMaterial;
+
+  public setGl(gl: THREE.WebGLRenderer) {
+    this.gl = gl;
+  }
+  private gl: THREE.WebGLRenderer;
 
   private static makeOrthographicCamera() {
     return new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);

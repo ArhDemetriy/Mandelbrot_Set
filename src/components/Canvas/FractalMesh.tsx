@@ -9,9 +9,6 @@ import { offsetAtom, paletteMapAtom, zoomAtom } from '@/store/fractalStore';
 
 export function FractalMesh() {
   const { gl, size } = useThree();
-  useEffect(() => {
-    gl.autoClear = false;
-  }, [gl]);
 
   const { pWidth, pHeight } = useMemo(
     () => ({
@@ -45,23 +42,22 @@ export function FractalMesh() {
   );
 
   useEffect(() => {
-    if (!mandelbrotEngine) return;
-    return () => mandelbrotEngine.dispose();
-  }, [mandelbrotEngine]);
+    gl.autoClear = false;
+    mandelbrotEngine.setGl(gl);
+  }, [gl, mandelbrotEngine]);
+
+  useEffect(() => () => mandelbrotEngine?.dispose(), [mandelbrotEngine]);
 
   useEffect(() => {
     mandelbrotEngine.setSize(pWidth, pHeight);
-    mandelbrotEngine.reset(gl);
   }, [pWidth, pHeight, zoom, gl, mandelbrotEngine]);
 
   useEffect(() => {
     mandelbrotEngine.setTexelScale(zoom);
-    mandelbrotEngine.reset(gl);
   }, [zoom, gl, mandelbrotEngine]);
 
   useEffect(() => {
     mandelbrotEngine.setOffset(offset);
-    mandelbrotEngine.reset(gl);
   }, [offset, gl, mandelbrotEngine]);
 
   useEffect(() => {
@@ -74,8 +70,8 @@ export function FractalMesh() {
   }, [paletteMap, mandelbrotEngine]);
 
   useFrame(() => {
-    mandelbrotEngine.step(gl);
-    mandelbrotEngine.renderScreen(gl);
+    mandelbrotEngine.step();
+    mandelbrotEngine.renderScreen();
   }, 1);
 
   return null;
