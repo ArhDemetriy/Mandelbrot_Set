@@ -9,27 +9,40 @@ layout(location = 1) out vec4 pc_state;
 uniform vec2 u_const;
 /** 1/(zoom*height), width, height */
 uniform vec3 u_view;
-/** ...offset, ...frameDeltaOffset */
+/** ...offset, ...pixelFrameDeltaOffset */
 uniform vec4 u_offset;
 /** iteration, dot, status, NEVER */
 uniform sampler2D u_prev_result;
 /** z, iz, dz, diz */
 uniform sampler2D u_prev_state;
 
-#define ITERATION_ON_FRAME 50
-
 #define NEVER 0.0
 #define LIM_ESC -1.0
 #define INF_ESC -2.0
 #define PREC_ERR -3.0
 
-void main() {
+ivec3 getNeedInitStateAndSafetyPixelCoord() {
+    vec2 pixelFrameDeltaOffset = vec2(u_offset.zw);
+    ivec2 pixelCoord = ivec2(gl_FragCoord.xy + pixelFrameDeltaOffset);
     ivec2 textureSize = ivec2(u_view.yz);
-    ivec2 pixelCoord = ivec2(gl_FragCoord.xy + u_offset.zw);
-    bool isOutOfTexture = any(bvec4(lessThan(pixelCoord, ivec2(10)), greaterThanEqual(pixelCoord, textureSize - 10)));
 
-    vec4 prevResult = isOutOfTexture ? vec4(NEVER) : texelFetch(u_prev_result, pixelCoord, 0);
-    vec4 prevState = isOutOfTexture ? vec4(NEVER) : texelFetch(u_prev_state, pixelCoord, 0);
+    int safeZone = (pixelFrameDeltaOffset.x + pixelFrameDeltaOffset.y) < 0.5 ? 0 : 5;
+    bool isOutOfTexture = (pixelCoord.x < safeZone) || (pixelCoord.y < safeZone) || (pixelCoord.x >= textureSize.x - safeZone) || (pixelCoord.y >= textureSize.y - safeZone);
+    return ivec3(int(isOutOfTexture), pixelCoord);
+}
+
+void main() {
+    ivec3 needInitStateAndSafetyPixelCoord = getNeedInitStateAndSafetyPixelCoord();
+    vec4 prevResult;
+    vec4 prevState;
+    if(bool(needInitStateAndSafetyPixelCoord.x)) {
+        prevResult = vec4(NEVER);
+        prevState = vec4(NEVER);
+    } else {
+        ivec2 safetyPixelCoord = needInitStateAndSafetyPixelCoord.yz;
+        prevResult = texelFetch(u_prev_result, safetyPixelCoord, 0);
+        prevState = texelFetch(u_prev_state, safetyPixelCoord, 0);
+    }
 
     int prevIterations = int(prevResult.x);
 
@@ -57,7 +70,7 @@ void main() {
         }
 
         vec2 currentZ = vec2((v0.x - v0.y), 2.0 * z.x * z.y) + c;
-        if(distance(z, currentZ) == 0.0) {
+        if((z == currentZ) || distance(z, currentZ) <= 0.0) {
             pc_result = vec4(float(prevIterations + i), (v0.x + v0.y), PREC_ERR, NEVER);
             pc_state = vec4(z, dz);
             return;
@@ -66,6 +79,6 @@ void main() {
         z = currentZ;
     }
 
-    pc_result = vec4(float(prevIterations + ITERATION_ON_FRAME), dot(z, z), LIM_ESC, NEVER);
+    pc_result = vec4(float(prevIterations + iterationOnFrame), dot(z, z), LIM_ESC, NEVER);
     pc_state = vec4(z, dz);
 }

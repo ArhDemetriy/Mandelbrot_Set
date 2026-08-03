@@ -8,7 +8,7 @@ import fragPaletteShader from '@/shaders/mandelbrot/mandelbrotPalette.frag?raw';
 import { offsetAtom, paletteMapAtom, zoomAtom } from '@/store/fractalStore';
 
 export function FractalMesh() {
-  const { gl, size } = useThree();
+  const { gl, size, invalidate } = useThree();
 
   const { pWidth, pHeight } = useMemo(
     () => ({
@@ -26,6 +26,7 @@ export function FractalMesh() {
     () =>
       new MandelbrotEngine({
         gl,
+        invalidate,
         f32Shader: fragF32Shader,
         paletteShader: fragPaletteShader,
 
@@ -41,12 +42,16 @@ export function FractalMesh() {
       })
   );
 
+  useEffect(() => () => mandelbrotEngine?.dispose(), [mandelbrotEngine]);
+
   useEffect(() => {
     gl.autoClear = false;
     mandelbrotEngine.setGl(gl);
   }, [gl, mandelbrotEngine]);
 
-  useEffect(() => () => mandelbrotEngine?.dispose(), [mandelbrotEngine]);
+  useEffect(() => {
+    mandelbrotEngine.setInvalidate(invalidate);
+  }, [invalidate, mandelbrotEngine]);
 
   useEffect(() => {
     mandelbrotEngine.setSize(pWidth, pHeight);
