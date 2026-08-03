@@ -48,6 +48,7 @@ export class MandelbrotEngine {
       uniforms: MandelbrotEngine.makeInitComputeUniforms({
         initResult: textures[0],
         initState: textures[1],
+        width,
         height,
         zoom,
         offset,
@@ -79,26 +80,36 @@ export class MandelbrotEngine {
   public setSize(width: number, height: number) {
     this.currentHeight = height;
     this.targets.forEach(target => target.setSize(width, height));
-    this.getComputeUniforms().u_view.value.setX(this.getScaleDivHeight());
+    const { value: u_view } = this.getComputeUniforms().u_view;
+    u_view.setX(this.getDivScaleHeight());
+    u_view.setY(width);
+    u_view.setZ(height);
+    this.resetPixelDeltaOffset();
     this.reset();
   }
 
-  public setTexelScale(zoom: number) {
+  public setZoom(zoom: number) {
     this.currentZoom = zoom;
-    this.getComputeUniforms().u_view.value.setX(this.getScaleDivHeight());
+    this.getComputeUniforms().u_view.value.setX(this.getDivScaleHeight());
+    this.resetPixelDeltaOffset();
     this.reset();
   }
   private currentHeight: number;
   private currentZoom: number;
-  private getScaleDivHeight() {
+  private getDivScaleHeight() {
     return 1 / (this.currentHeight * this.currentZoom);
   }
 
-  public setOffset(offset: [number, number]) {
-    const { value } = this.getComputeUniforms().u_view;
-    value.setY(offset[0]);
-    value.setZ(offset[1]);
-    this.reset();
+  public setOffset({ 0: X, 1: Y }: [number, number]) {
+    const { value: uOffset } = this.getComputeUniforms().u_offset;
+    const k = this.currentZoom * this.currentHeight;
+    uOffset.set(X, Y, k * (X - uOffset.x), k * (Y - uOffset.y));
+    this.resetCompute();
+  }
+  private resetPixelDeltaOffset() {
+    const { value: uOffset } = this.getComputeUniforms().u_offset;
+    uOffset.setZ(0);
+    uOffset.setW(0);
   }
 
   public reset() {
@@ -142,6 +153,7 @@ export class MandelbrotEngine {
     this.gl.render(this.computeScene, this.computeCamera);
     this.gl.setRenderTarget(null);
 
+    this.resetPixelDeltaOffset();
     this.switchTargets();
     this.incCompute();
   }
@@ -156,7 +168,7 @@ export class MandelbrotEngine {
     this.frames++;
   }
 
-  private static iterationOnFrame = 50;
+  private static iterationOnFrame = 20;
   private static maxComputedFrames = Math.round(10000 / MandelbrotEngine.iterationOnFrame);
 
   protected getComputeUniforms() {
@@ -225,22 +237,28 @@ export class MandelbrotEngine {
 
   private static makeInitComputeUniforms({
     zoom,
+    width,
     height,
     offset,
     initResult,
     initState,
   }: {
     zoom: number;
+    width: number;
     height: number;
     offset: [number, number];
     initResult: THREE.DataTexture;
     initState: THREE.DataTexture;
   }) {
     return {
-      u_const: { value: new THREE.Vector4(MandelbrotEngine.iterationOnFrame) },
+      u_const: { value: new THREE.Vector2(MandelbrotEngine.iterationOnFrame) },
+      u_offset: {
+        /** ...offset, ...pixelDeltaOffset */
+        value: new THREE.Vector4(offset[0], offset[1], 0.0, 0.0),
+      },
       u_view: {
-        /** texelScale/height, ...offset */
-        value: new THREE.Vector4(zoom / height, ...offset),
+        /** texelScale/height */
+        value: new THREE.Vector3(zoom / height, width, height),
       },
       u_prev_result: { value: initResult } satisfies ReturnType<
         (typeof MandelbrotEngine)['makeInitScreenUniforms']

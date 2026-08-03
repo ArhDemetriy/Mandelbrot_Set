@@ -5,11 +5,13 @@ layout(location = 0) out vec4 pc_result;
 /** z, iz, dz, diz */
 layout(location = 1) out vec4 pc_state;
 
-/** ITERATION_ON_FRAME */
-uniform vec4 u_const;
-/** texelScale/height, ...offset */
-uniform vec4 u_view;
-/** iteration, dot, status, _ */
+/** ITERATION_ON_FRAME, NEVER */
+uniform vec2 u_const;
+/** 1/(zoom*height), width, height */
+uniform vec3 u_view;
+/** ...offset, ...frameDeltaOffset */
+uniform vec4 u_offset;
+/** iteration, dot, status, NEVER */
 uniform sampler2D u_prev_result;
 /** z, iz, dz, diz */
 uniform sampler2D u_prev_state;
@@ -22,10 +24,12 @@ uniform sampler2D u_prev_state;
 #define PREC_ERR -3.0
 
 void main() {
-    ivec2 pixelCoord = ivec2(gl_FragCoord.xy);
+    ivec2 textureSize = ivec2(u_view.yz);
+    ivec2 pixelCoord = ivec2(gl_FragCoord.xy + u_offset.zw);
+    bool isOutOfTexture = any(bvec4(lessThan(pixelCoord, ivec2(10)), greaterThanEqual(pixelCoord, textureSize - 10)));
 
-    vec4 prevResult = texelFetch(u_prev_result, pixelCoord, 0);
-    vec4 prevState = texelFetch(u_prev_state, pixelCoord, 0);
+    vec4 prevResult = isOutOfTexture ? vec4(NEVER) : texelFetch(u_prev_result, pixelCoord, 0);
+    vec4 prevState = isOutOfTexture ? vec4(NEVER) : texelFetch(u_prev_state, pixelCoord, 0);
 
     int prevIterations = int(prevResult.x);
 
@@ -41,7 +45,7 @@ void main() {
     vec2 z = prevIterations <= 0 ? vec2(0.0) : prevState.xy;
     vec2 dz = prevIterations <= 0 ? vec2(0.0) : prevState.zw;
 
-    vec2 c = gl_FragCoord.xy * u_view.x + u_view.yz;
+    vec2 c = gl_FragCoord.xy * u_view.x + u_offset.xy;
 
     int iterationOnFrame = int(u_const.x);
     for(int i = 0; i < iterationOnFrame; i++) {

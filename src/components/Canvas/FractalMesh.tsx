@@ -53,7 +53,7 @@ export function FractalMesh() {
   }, [pWidth, pHeight, zoom, gl, mandelbrotEngine]);
 
   useEffect(() => {
-    mandelbrotEngine.setTexelScale(zoom);
+    mandelbrotEngine.setZoom(zoom);
   }, [zoom, gl, mandelbrotEngine]);
 
   useEffect(() => {
