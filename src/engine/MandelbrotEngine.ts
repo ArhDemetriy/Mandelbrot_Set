@@ -1,5 +1,7 @@
 import * as THREE from 'three';
 
+import vertexShader from '@/shaders/mandelbrot/mandelbrot.vert?raw';
+
 export class MandelbrotEngine {
   constructor({
     gl,
@@ -42,7 +44,7 @@ export class MandelbrotEngine {
     this.computeMaterial = new THREE.ShaderMaterial({
       glslVersion: THREE.GLSL3,
       fragmentShader: f32Shader,
-      vertexShader: MandelbrotEngine.getFullScreenVertShader(),
+      vertexShader,
       uniforms: MandelbrotEngine.makeInitComputeUniforms({
         initResult: textures[0],
         initState: textures[1],
@@ -60,7 +62,7 @@ export class MandelbrotEngine {
     this.screenMaterial = new THREE.ShaderMaterial({
       glslVersion: THREE.GLSL3,
       fragmentShader: paletteShader,
-      vertexShader: MandelbrotEngine.getFullScreenVertShader(),
+      vertexShader,
       uniforms: MandelbrotEngine.makeInitScreenUniforms({
         initResult: textures[0],
         paletteA,
@@ -100,8 +102,6 @@ export class MandelbrotEngine {
   }
 
   public reset() {
-    // if (this.isFullCompute()) return;
-
     this.targets.forEach(target => {
       this.gl.setRenderTarget(target);
       this.gl.clear(true, true, true);
@@ -130,7 +130,7 @@ export class MandelbrotEngine {
 
   /** Выполнить 1 шаг накопления фрактала (Ping-Pong) */
   public step() {
-    // if (this.isFullCompute()) return;
+    if (this.isFullCompute()) return;
 
     const { readTarget, writeTarget } = this.getTargets();
 
@@ -143,17 +143,15 @@ export class MandelbrotEngine {
     this.gl.setRenderTarget(null);
 
     this.switchTargets();
-    // this.incCompute();
+    this.incCompute();
   }
   private frames = 0;
-  // @ts-ignore
   private isFullCompute() {
     return this.frames >= MandelbrotEngine.maxComputedFrames;
   }
   private resetCompute() {
     this.frames = 0;
   }
-  // @ts-ignore
   private incCompute() {
     this.frames++;
   }
@@ -223,14 +221,6 @@ export class MandelbrotEngine {
       magFilter: THREE.NearestFilter,
       type: THREE.FloatType,
     } satisfies THREE.RenderTargetOptions;
-  }
-
-  private static getFullScreenVertShader() {
-    return `
-void main() {
-    gl_Position = vec4(position, 1.0);
-}
-` as const;
   }
 
   private static makeInitComputeUniforms({
