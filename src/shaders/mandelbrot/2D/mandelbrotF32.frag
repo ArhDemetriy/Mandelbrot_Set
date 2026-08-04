@@ -5,7 +5,7 @@ layout(location = 0) out vec4 pc_result;
 /** z, iz, dz, diz */
 layout(location = 1) out vec4 pc_state;
 
-/** ITERATION_ON_FRAME, NEVER */
+/** ITERATION_ON_FRAME, MAX_ITERATIONS */
 uniform vec2 u_const;
 /** 1/(zoom*height) */
 uniform vec2 u_view;

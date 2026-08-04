@@ -238,19 +238,19 @@ export class MandelbrotEngine {
     this.gl.setRenderTarget(null);
     this.gl.render(this.screenScene, this.screenCamera);
   }
-  private frames = 0;
+  private iterations = 0;
   private isFullCompute() {
-    return this.frames >= MandelbrotEngine.maxComputedFrames;
+    return this.iterations >= MandelbrotEngine.maxIterations;
   }
   private resetCompute() {
-    this.frames = 0;
+    this.iterations = 0;
   }
   private incCompute() {
-    this.frames++;
+    this.iterations += MandelbrotEngine.iterationOnFrame;
   }
 
   private static iterationOnFrame = 20;
-  private static maxComputedFrames = Math.round(10000 / MandelbrotEngine.iterationOnFrame);
+  private static maxIterations = 10000;
 
   protected getComputeUniforms() {
     return this.computeMaterial.uniforms as ReturnType<(typeof MandelbrotEngine)['makeInitComputeUniforms']>;
@@ -329,7 +329,7 @@ export class MandelbrotEngine {
     initState: THREE.DataTexture;
   }) {
     return {
-      u_const: { value: new THREE.Vector2(MandelbrotEngine.iterationOnFrame) },
+      u_const: { value: new THREE.Vector2(MandelbrotEngine.iterationOnFrame, MandelbrotEngine.maxIterations) },
       u_offset: {
         /** ...offset */
         value: new THREE.Vector2(offset[0], offset[1]),
