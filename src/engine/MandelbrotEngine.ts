@@ -393,3 +393,125 @@ export class MandelbrotEngine {
     } satisfies THREE.ShaderMaterialProperties['uniforms'];
   }
 }
+
+/** Конфигурация FBO для конкретной стратегии рендера */
+export interface GPUResourceConfig {
+  width: number;
+  height: number;
+  /** Количество текстур в MRT (Multiple Render Targets). Для FP32 = 2, для FP64/Perturbation может быть 3-4 */
+  count: number;
+  type: THREE.TextureDataType;
+  minFilter: THREE.TextureFilter;
+  magFilter: THREE.MagnificationTextureFilter;
+}
+
+/** Параметры инициализации по умолчанию */
+export type GPUResourceInitOptions = Omit<GPUResourceConfig, 'count' | 'type' | 'minFilter' | 'magFilter'> &
+  Partial<Omit<GPUResourceConfig, 'width' | 'height'>>;
+
+export interface IGPUResourceManager {
+  /** Текущий буфер для чтения */
+  readonly readTarget: THREE.WebGLRenderTarget;
+  /** Текущий буфер для записи */
+  readonly writeTarget: THREE.WebGLRenderTarget;
+  /** Конфигурация буферов, используемая в данный момент */
+  readonly currentConfig: Readonly<GPUResourceConfig>;
+
+  /** Переключение Ping-Pong буферов местами */
+  swap(): void;
+
+  /** Изменение размера буферов без пересоздания (если формат не менялся) */
+  resize(width: number, height: number): void;
+
+  /** Полная переаллокация буферов (например, при смене FP32 -> FP64) */
+  reallocate(newConfig: Partial<GPUResourceConfig>): void;
+
+  /** Очистка всех буферов (заполнение нулями/базовым цветом) */
+  clear(gl: THREE.WebGLRenderer): void;
+
+  /** Освобождение WebGL-памяти в GPU */
+  dispose(): void;
+}
+
+export class GPUResourceManager implements IGPUResourceManager {
+  private targets: [THREE.WebGLRenderTarget, THREE.WebGLRenderTarget];
+  private readIndex: 0 | 1 = 0;
+  private _config: GPUResourceConfig;
+
+  constructor(options: GPUResourceInitOptions) {
+    this._config = {
+      width: options.width,
+      height: options.height,
+      count: options.count ?? 2,
+      type: options.type ?? THREE.FloatType,
+      minFilter: options.minFilter ?? THREE.NearestFilter,
+      magFilter: options.magFilter ?? THREE.NearestFilter,
+    };
+
+    this.targets = [this.createRenderTarget(this._config), this.createRenderTarget(this._config)];
+  }
+
+  public get readTarget(): THREE.WebGLRenderTarget {
+    return this.targets[this.readIndex];
+  }
+
+  public get writeTarget(): THREE.WebGLRenderTarget {
+    return this.targets[(1 - this.readIndex) as 0 | 1];
+  }
+
+  public get currentConfig(): Readonly<GPUResourceConfig> {
+    return this._config;
+  }
+
+  public swap(): void {
+    this.readIndex = (1 - this.readIndex) as 0 | 1;
+  }
+
+  public resize(width: number, height: number): void {
+    if (this._config.width === width && this._config.height === height) return;
+
+    this._config.width = width;
+    this._config.height = height;
+
+    this.targets[0].setSize(width, height);
+    this.targets[1].setSize(width, height);
+  }
+
+  public reallocate(newConfig: Partial<GPUResourceConfig>): void {
+    this._config = { ...this._config, ...newConfig };
+
+    // Старые FBO необходимо явно уничтожить в GPU
+    this.targets[0].dispose();
+    this.targets[1].dispose();
+
+    this.targets = [this.createRenderTarget(this._config), this.createRenderTarget(this._config)];
+    this.readIndex = 0;
+  }
+
+  public clear(gl: THREE.WebGLRenderer): void {
+    const currentRenderTarget = gl.getRenderTarget();
+
+    this.targets.forEach(target => {
+      gl.setRenderTarget(target);
+      gl.clear(true, true, true);
+    });
+
+    gl.setRenderTarget(currentRenderTarget);
+  }
+
+  public dispose(): void {
+    this.targets[0].dispose();
+    this.targets[1].dispose();
+  }
+
+  private createRenderTarget(config: GPUResourceConfig): THREE.WebGLRenderTarget {
+    return new THREE.WebGLRenderTarget(config.width, config.height, {
+      count: config.count,
+      type: config.type,
+      minFilter: config.minFilter,
+      magFilter: config.magFilter,
+      depthBuffer: false,
+      stencilBuffer: false,
+    });
+  }
+}
