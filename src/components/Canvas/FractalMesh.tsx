@@ -3,8 +3,6 @@ import { useAtomValue } from 'jotai';
 import { useEffect, useMemo, useState } from 'react';
 
 import { MandelbrotEngine } from '@/engine/MandelbrotEngine';
-import fragF32Shader from '@/shaders/mandelbrot/2D/mandelbrotF32.frag?raw';
-import fragPaletteShader from '@/shaders/mandelbrot/mandelbrotPalette.frag?raw';
 import { offsetAtom, paletteMapAtom, zoomAtom } from '@/store/fractalStore';
 
 export function FractalMesh() {
@@ -27,8 +25,6 @@ export function FractalMesh() {
       new MandelbrotEngine({
         gl,
         invalidate,
-        f32Shader: fragF32Shader,
-        paletteShader: fragPaletteShader,
 
         width: pWidth,
         height: pHeight,

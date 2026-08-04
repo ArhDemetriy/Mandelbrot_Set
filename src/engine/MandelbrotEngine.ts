@@ -1,8 +1,10 @@
 import type { RenderCallback } from '@react-three/fiber';
 import * as THREE from 'three';
 
+import f32Shader from '@/shaders/mandelbrot/2D/mandelbrotF32.frag?raw';
 import shiftShader from '@/shaders/mandelbrot/2D/mandelbrotF32Shift.frag?raw';
 import vertexShader from '@/shaders/mandelbrot/mandelbrot.vert?raw';
+import paletteShader from '@/shaders/mandelbrot/mandelbrotPalette.frag?raw';
 
 export class MandelbrotEngine {
   private shiftMaterial: THREE.ShaderMaterial;
@@ -11,8 +13,6 @@ export class MandelbrotEngine {
   constructor({
     gl,
     invalidate,
-    f32Shader,
-    paletteShader,
 
     width,
     height,
@@ -26,8 +26,6 @@ export class MandelbrotEngine {
   }: {
     gl: THREE.WebGLRenderer;
     invalidate: (frames?: number | undefined) => void;
-    f32Shader: string;
-    paletteShader: string;
     width: number;
     height: number;
     zoom: number;
