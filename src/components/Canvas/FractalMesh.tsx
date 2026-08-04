@@ -74,10 +74,7 @@ export function FractalMesh() {
     });
   }, [paletteMap, mandelbrotEngine]);
 
-  useFrame(() => {
-    mandelbrotEngine.step();
-    mandelbrotEngine.renderScreen();
-  }, 1);
+  useFrame(mandelbrotEngine.thisFreeStep, 1);
 
   return null;
 }
