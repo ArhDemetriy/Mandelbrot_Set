@@ -1,17 +1,21 @@
 import type { RenderCallback } from '@react-three/fiber';
 import * as THREE from 'three';
+import type { DataTexture, ShaderMaterial } from 'three';
 
 import f32Shader from '@/shaders/mandelbrot/2D/mandelbrotF32.frag?raw';
 import shiftShader from '@/shaders/mandelbrot/2D/mandelbrotF32Shift.frag?raw';
 import vertexShader from '@/shaders/mandelbrot/mandelbrot.vert?raw';
-import paletteShader from '@/shaders/mandelbrot/mandelbrotPalette.frag?raw';
 
 import { GPUResourceManager, type IGPUResourceManager } from './GPUResourceManager';
+import { QuadRenderer } from './passes/QuadRenderer';
+import { ScreenPass } from './passes/ScreenPass';
 
 export class MandelbrotEngine {
   private shiftMaterial: THREE.ShaderMaterial;
   private shiftScene: THREE.Scene<THREE.Object3DEventMap>;
   private shiftCamera: THREE.OrthographicCamera;
+  private readonly quadRenderer = new QuadRenderer<ShaderMaterial>();
+  private readonly screenPass: ScreenPass<DataTexture>;
 
   private readonly targets: IGPUResourceManager;
   constructor({
@@ -68,21 +72,14 @@ export class MandelbrotEngine {
     this.computeScene.add(new THREE.Mesh(quadGeometry, this.computeMaterial));
     this.computeCamera = MandelbrotEngine.makeOrthographicCamera();
 
-    this.screenMaterial = new THREE.ShaderMaterial({
-      glslVersion: THREE.GLSL3,
-      fragmentShader: paletteShader,
-      vertexShader,
-      uniforms: MandelbrotEngine.makeInitScreenUniforms({
-        initResult: textures[0],
-        paletteA,
-        paletteB,
-        paletteC,
-        paletteD,
-      }),
+    this.screenPass = new ScreenPass({
+      render: this.quadRenderer.render.bind(this.quadRenderer),
+      computeResult: textures[0],
+      paletteA,
+      paletteB,
+      paletteC,
+      paletteD,
     });
-    this.screenScene = new THREE.Scene();
-    this.screenScene.add(new THREE.Mesh(quadGeometry, this.screenMaterial));
-    this.screenCamera = MandelbrotEngine.makeOrthographicCamera();
 
     this.shiftMaterial = new THREE.ShaderMaterial({
       glslVersion: THREE.GLSL3,
@@ -211,11 +208,7 @@ export class MandelbrotEngine {
     this.incCompute();
   }
   private screen() {
-    const uniforms = this.getScreenUniforms();
-    uniforms.u_compute_result.value = this.targets.readTarget.textures[0];
-
-    this.gl.setRenderTarget(null);
-    this.gl.render(this.screenScene, this.screenCamera);
+    this.screenPass.render(this.gl, this.targets.readTarget.textures[0]);
   }
   private iterations = 0;
   private isFullCompute() {
@@ -237,43 +230,22 @@ export class MandelbrotEngine {
   private computeScene: THREE.Scene;
   private computeCamera: THREE.OrthographicCamera;
 
-  public setPalette({
-    paletteA,
-    paletteB,
-    paletteC,
-    paletteD,
-  }: {
-    paletteA: THREE.Vector3;
-    paletteB: THREE.Vector3;
-    paletteC: THREE.Vector3;
-    paletteD: THREE.Vector3;
-  }) {
-    const screenUniforms = this.getScreenUniforms();
-    screenUniforms.u_palette_a.value = paletteA;
-    screenUniforms.u_palette_b.value = paletteB;
-    screenUniforms.u_palette_c.value = paletteC;
-    screenUniforms.u_palette_d.value = paletteD;
+  public setPalette(palettes: Parameters<ScreenPass['setPalette']>[0]) {
+    this.screenPass.setPalette(palettes);
     this.invalidate();
-  }
-
-  protected getScreenUniforms() {
-    return this.screenMaterial.uniforms as ReturnType<(typeof MandelbrotEngine)['makeInitScreenUniforms']>;
   }
 
   protected getShiftUniforms() {
     return this.shiftMaterial.uniforms as ReturnType<(typeof MandelbrotEngine)['makeInitShiftUniforms']>;
   }
 
-  private screenScene: THREE.Scene;
-  private screenCamera: THREE.OrthographicCamera;
-
   public dispose() {
     this.targets.dispose();
     this.computeMaterial.dispose();
-    this.screenMaterial.dispose();
+    this.screenPass.dispose();
+    this.quadRenderer.dispose();
   }
   private computeMaterial: THREE.ShaderMaterial;
-  private screenMaterial: THREE.ShaderMaterial;
 
   public setGl(gl: THREE.WebGLRenderer) {
     this.gl = gl;
