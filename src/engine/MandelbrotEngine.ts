@@ -3,19 +3,17 @@ import * as THREE from 'three';
 import type { DataTexture, ShaderMaterial } from 'three';
 
 import f32Shader from '@/shaders/mandelbrot/2D/mandelbrotF32.frag?raw';
-import shiftShader from '@/shaders/mandelbrot/2D/mandelbrotF32Shift.frag?raw';
 import vertexShader from '@/shaders/mandelbrot/mandelbrot.vert?raw';
 
 import { GPUResourceManager, type IGPUResourceManager } from './GPUResourceManager';
 import { QuadRenderer } from './passes/QuadRenderer';
 import { ScreenPass } from './passes/ScreenPass';
+import { ShiftPass } from './passes/ShiftPass';
 
 export class MandelbrotEngine {
-  private shiftMaterial: THREE.ShaderMaterial;
-  private shiftScene: THREE.Scene<THREE.Object3DEventMap>;
-  private shiftCamera: THREE.OrthographicCamera;
   private readonly quadRenderer = new QuadRenderer<ShaderMaterial>();
   private readonly screenPass: ScreenPass<DataTexture>;
+  private readonly shiftPass: ShiftPass<DataTexture>;
 
   private readonly targets: IGPUResourceManager;
   constructor({
@@ -72,30 +70,23 @@ export class MandelbrotEngine {
     this.computeScene.add(new THREE.Mesh(quadGeometry, this.computeMaterial));
     this.computeCamera = MandelbrotEngine.makeOrthographicCamera();
 
+    const render = this.quadRenderer.render.bind(this.quadRenderer);
     this.screenPass = new ScreenPass({
-      render: this.quadRenderer.render.bind(this.quadRenderer),
-      computeResult: textures[0],
+      render,
+      result: textures[0],
       paletteA,
       paletteB,
       paletteC,
       paletteD,
     });
 
-    this.shiftMaterial = new THREE.ShaderMaterial({
-      glslVersion: THREE.GLSL3,
-      fragmentShader: shiftShader,
-      vertexShader,
-      uniforms: MandelbrotEngine.makeInitShiftUniforms({
-        initResult: textures[0],
-        initState: textures[1],
-        width,
-        height,
-        offset,
-      }),
+    this.shiftPass = new ShiftPass({
+      render,
+      result: textures[0],
+      state: textures[1],
+      width,
+      height,
     });
-    this.shiftScene = new THREE.Scene();
-    this.shiftScene.add(new THREE.Mesh(quadGeometry, this.shiftMaterial));
-    this.shiftCamera = MandelbrotEngine.makeOrthographicCamera();
 
     this.thisFreeStep = this.step.bind(this);
 
@@ -112,7 +103,10 @@ export class MandelbrotEngine {
     const { value: u_view } = this.getComputeUniforms().u_view;
     u_view.setX(this.getDivScaleHeight());
     u_view.setY(width);
-    this.resetPixelDeltaOffset();
+
+    this.shiftPass.resetShift();
+    this.shiftPass.setSize(width, height);
+
     this.reset();
     this.invalidate();
   }
@@ -120,7 +114,7 @@ export class MandelbrotEngine {
   public setZoom(zoom: number) {
     this.currentZoom = zoom;
     this.getComputeUniforms().u_view.value.setX(this.getDivScaleHeight());
-    this.resetPixelDeltaOffset();
+    this.shiftPass.resetShift();
     this.reset();
     this.invalidate();
   }
@@ -133,26 +127,17 @@ export class MandelbrotEngine {
   public setOffset({ 0: X, 1: Y }: [number, number]) {
     const { value: cOffset } = this.getComputeUniforms().u_offset;
 
-    const { value: sOffset } = this.getShiftUniforms().u_offset;
     const { x: prevOffsetX, y: prevOffsetY } = cOffset;
     const scale = this.currentHeight * this.currentZoom;
-    const xShift = (X - prevOffsetX) * scale;
-    const yShift = (Y - prevOffsetY) * scale;
-    sOffset.setX(xShift);
-    sOffset.setY(yShift);
+    this.shiftPass.incShift({
+      X: (X - prevOffsetX) * scale,
+      Y: (Y - prevOffsetY) * scale,
+    });
 
     cOffset.set(X, Y);
 
     this.resetCompute();
-    this.needShift = true;
     this.invalidate();
-  }
-  private needShift = false;
-  private resetPixelDeltaOffset() {
-    const { value: sOffset } = this.getShiftUniforms().u_offset;
-    sOffset.setX(0);
-    sOffset.setY(0);
-    this.needShift = false;
   }
 
   private reset() {
@@ -165,7 +150,7 @@ export class MandelbrotEngine {
 
   private isOddFrame = false;
   public step(..._props: Parameters<RenderCallback>) {
-    if (this.needShift) {
+    if (this.shiftPass.existShift()) {
       this.shift();
       if (this.isOddFrame) this.compute();
       this.screen();
@@ -181,17 +166,21 @@ export class MandelbrotEngine {
     }
   }
   private shift() {
-    const { readTarget, writeTarget } = this.targets;
-
-    const uniforms = this.getShiftUniforms();
-    uniforms.u_prev_result.value = readTarget.textures[0];
-    uniforms.u_prev_state.value = readTarget.textures[1];
+    const {
+      readTarget: { textures },
+      writeTarget,
+    } = this.targets;
 
     this.gl.setRenderTarget(writeTarget);
-    this.gl.render(this.shiftScene, this.shiftCamera);
+    this.shiftPass.render({
+      gl: this.gl,
+      result: textures[0],
+      state: textures[1],
+    });
     this.gl.setRenderTarget(null);
+    this.shiftPass.resetShift();
+
     this.targets.swap();
-    this.resetPixelDeltaOffset();
   }
   private compute() {
     const { readTarget, writeTarget } = this.targets;
@@ -208,6 +197,7 @@ export class MandelbrotEngine {
     this.incCompute();
   }
   private screen() {
+    this.gl.setRenderTarget(null);
     this.screenPass.render(this.gl, this.targets.readTarget.textures[0]);
   }
   private iterations = 0;
@@ -233,10 +223,6 @@ export class MandelbrotEngine {
   public setPalette(palettes: Parameters<ScreenPass['setPalette']>[0]) {
     this.screenPass.setPalette(palettes);
     this.invalidate();
-  }
-
-  protected getShiftUniforms() {
-    return this.shiftMaterial.uniforms as ReturnType<(typeof MandelbrotEngine)['makeInitShiftUniforms']>;
   }
 
   public dispose() {
@@ -289,59 +275,7 @@ export class MandelbrotEngine {
         /** texelScale/height */
         value: new THREE.Vector2(zoom / height),
       },
-      u_prev_result: { value: initResult } satisfies ReturnType<
-        (typeof MandelbrotEngine)['makeInitScreenUniforms']
-      >['u_compute_result'],
-      u_prev_state: { value: initState },
-    } satisfies THREE.ShaderMaterialProperties['uniforms'];
-  }
-
-  private static makeInitScreenUniforms({
-    initResult,
-    paletteA,
-    paletteB,
-    paletteC,
-    paletteD,
-  }: {
-    initResult: THREE.DataTexture;
-    paletteA: THREE.Vector3;
-    paletteB: THREE.Vector3;
-    paletteC: THREE.Vector3;
-    paletteD: THREE.Vector3;
-  }) {
-    const log2 = Math.log(2);
-    const TWO_PI = 2.0 * Math.PI;
-    return {
-      u_const: { value: new THREE.Vector3(TWO_PI, 1 / (log2 * 2), 1 / log2) },
-      u_compute_result: { value: initResult },
-      u_palette_a: { value: paletteA },
-      u_palette_b: { value: paletteB },
-      u_palette_c: { value: paletteC },
-      u_palette_d: { value: paletteD },
-    } satisfies THREE.ShaderMaterialProperties['uniforms'];
-  }
-
-  private static makeInitShiftUniforms({
-    width,
-    height,
-    offset,
-    initResult,
-    initState,
-  }: {
-    width: number;
-    height: number;
-    offset: [number, number];
-    initResult: THREE.DataTexture;
-    initState: THREE.DataTexture;
-  }) {
-    return {
-      u_offset: {
-        /** ...offset, width, height */
-        value: new THREE.Vector4(offset[0], offset[1], width, height),
-      },
-      u_prev_result: { value: initResult } satisfies ReturnType<
-        (typeof MandelbrotEngine)['makeInitScreenUniforms']
-      >['u_compute_result'],
+      u_prev_result: { value: initResult },
       u_prev_state: { value: initState },
     } satisfies THREE.ShaderMaterialProperties['uniforms'];
   }
