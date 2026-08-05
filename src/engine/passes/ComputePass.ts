@@ -1,0 +1,81 @@
+import {
+  type DataTexture,
+  GLSL3,
+  ShaderMaterial,
+  type ShaderMaterialProperties,
+  Vector2,
+  type WebGLRenderer,
+} from 'three';
+
+import f32Shader from '@/shaders/mandelbrot/2D/mandelbrotF32.frag?raw';
+import vertexShader from '@/shaders/mandelbrot/mandelbrot.vert?raw';
+
+export class ComputePass {
+  private readonly material: ShaderMaterial;
+  private readonly quadRender: (gl: WebGLRenderer, material: ShaderMaterial) => void;
+  constructor({
+    render,
+    ...initUniforms
+  }: {
+    render(gl: WebGLRenderer, material: ShaderMaterial): void;
+
+    zoom: number;
+    width?: number;
+    height: number;
+    offset: [number, number];
+    result: DataTexture;
+    state: DataTexture;
+  }) {
+    this.quadRender = render;
+
+    this.material = new ShaderMaterial({
+      glslVersion: GLSL3,
+      fragmentShader: f32Shader,
+      vertexShader,
+      uniforms: ComputePass.makeInitComputeUniforms(initUniforms),
+    });
+  }
+
+  public render({ gl, result, state }: { gl: WebGLRenderer; result: DataTexture; state: DataTexture }) {
+    const uniforms = this.getUniforms();
+
+    this.quadRender(gl, this.material);
+  }
+
+  public dispose() {
+    this.material.dispose();
+  }
+
+  private getUniforms() {
+    return this.material.uniforms as ReturnType<(typeof ComputePass)['makeInitComputeUniforms']>;
+  }
+
+  private static makeInitComputeUniforms({
+    zoom,
+    height,
+    offset,
+    result,
+    state,
+  }: {
+    zoom: number;
+    width?: number;
+    height: number;
+    offset: [number, number];
+    result: DataTexture;
+    state: DataTexture;
+  }) {
+    return {
+      u_const: { value: new Vector2(20, 10000) },
+      u_offset: {
+        /** ...offset */
+        value: new Vector2(offset[0], offset[1]),
+      },
+      u_view: {
+        /** texelScale/height */
+        value: new Vector2(zoom / height),
+      },
+      u_prev_result: { value: result },
+      u_prev_state: { value: state },
+    } satisfies ShaderMaterialProperties['uniforms'];
+  }
+}

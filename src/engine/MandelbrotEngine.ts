@@ -6,15 +6,17 @@ import f32Shader from '@/shaders/mandelbrot/2D/mandelbrotF32.frag?raw';
 import vertexShader from '@/shaders/mandelbrot/mandelbrot.vert?raw';
 
 import { GPUResourceManager, type IGPUResourceManager } from './GPUResourceManager';
+import { ComputePass } from './passes/ComputePass';
 import { QuadRenderer } from './passes/QuadRenderer';
 import { ScreenPass } from './passes/ScreenPass';
 import { ShiftPass } from './passes/ShiftPass';
 
 export class MandelbrotEngine {
   private readonly quadRenderer = new QuadRenderer<ShaderMaterial>();
-  private readonly screenPass: ScreenPass<DataTexture>;
   private readonly shiftPass: ShiftPass<DataTexture>;
+  private readonly computePass: ComputePass;
 
+  private readonly screenPass: ScreenPass<DataTexture>;
   private readonly targets: IGPUResourceManager;
   constructor({
     gl,
@@ -71,6 +73,24 @@ export class MandelbrotEngine {
     this.computeCamera = MandelbrotEngine.makeOrthographicCamera();
 
     const render = this.quadRenderer.render.bind(this.quadRenderer);
+    this.shiftPass = new ShiftPass({
+      render,
+      result: textures[0],
+      state: textures[1],
+      width,
+      height,
+    });
+
+    this.computePass = new ComputePass({
+      render,
+      result: textures[0],
+      state: textures[1],
+      width,
+      height,
+      zoom,
+      offset,
+    });
+
     this.screenPass = new ScreenPass({
       render,
       result: textures[0],
@@ -78,14 +98,6 @@ export class MandelbrotEngine {
       paletteB,
       paletteC,
       paletteD,
-    });
-
-    this.shiftPass = new ShiftPass({
-      render,
-      result: textures[0],
-      state: textures[1],
-      width,
-      height,
     });
 
     this.thisFreeStep = this.step.bind(this);
@@ -226,10 +238,13 @@ export class MandelbrotEngine {
   }
 
   public dispose() {
-    this.targets.dispose();
     this.computeMaterial.dispose();
+
     this.screenPass.dispose();
+    this.computePass.dispose();
+    this.shiftPass.dispose();
     this.quadRenderer.dispose();
+    this.targets.dispose();
   }
   private computeMaterial: THREE.ShaderMaterial;
 

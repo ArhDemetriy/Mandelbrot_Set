@@ -8,11 +8,7 @@ export class ScreenPass<TTexture extends Texture = Texture> {
   private readonly quadRender: (gl: WebGLRenderer, material: ShaderMaterial) => void;
   constructor({
     render,
-    result,
-    paletteA,
-    paletteB,
-    paletteC,
-    paletteD,
+    ...initUniforms
   }: {
     render(gl: WebGLRenderer, material: ShaderMaterial): void;
     result: TTexture;
@@ -27,13 +23,7 @@ export class ScreenPass<TTexture extends Texture = Texture> {
       glslVersion: GLSL3,
       vertexShader,
       fragmentShader: paletteShader,
-      uniforms: ScreenPass.makeInitScreenUniforms({
-        result,
-        paletteA,
-        paletteB,
-        paletteC,
-        paletteD,
-      }),
+      uniforms: ScreenPass.makeInitScreenUniforms(initUniforms),
     });
   }
 
