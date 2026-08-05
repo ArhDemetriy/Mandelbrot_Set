@@ -1,39 +1,26 @@
-import * as THREE from 'three';
+import {
+  type DataTexture,
+  FloatType,
+  type MagnificationTextureFilter,
+  NearestFilter,
+  type TextureDataType,
+  type TextureFilter,
+  WebGLRenderTarget,
+  type WebGLRenderer,
+} from 'three';
 
 /** Конфигурация FBO для конкретной стратегии рендера */
 interface GPUResourceConfig {
   width: number;
   height: number;
   count: number;
-  type: THREE.TextureDataType;
-  minFilter: THREE.TextureFilter;
-  magFilter: THREE.MagnificationTextureFilter;
+  type: TextureDataType;
+  minFilter: TextureFilter;
+  magFilter: MagnificationTextureFilter;
 }
 
-export interface IGPUResourceManager {
-  readonly readTarget: THREE.WebGLRenderTarget<THREE.DataTexture>;
-  readonly writeTarget: THREE.WebGLRenderTarget<THREE.DataTexture>;
-
-  readonly currentConfig: Readonly<GPUResourceConfig>;
-
-  /** Переключение Ping-Pong буферов местами */
-  swap(): void;
-
-  /** Изменение размера буферов без пересоздания (если формат не менялся) */
-  resize(width: number, height: number): void;
-
-  /** Полная переаллокация буферов (например, при смене FP32 -> FP64) */
-  reallocate(newConfig: Partial<GPUResourceConfig>): void;
-
-  /** Очистка всех буферов (заполнение нулями/базовым цветом) */
-  clear(gl: THREE.WebGLRenderer, requiredRenderTarget?: THREE.WebGLRenderTarget | null): void;
-
-  /** Освобождение WebGL-памяти в GPU */
-  dispose(): void;
-}
-
-export class GPUResourceManager implements IGPUResourceManager {
-  private targets: [THREE.WebGLRenderTarget<THREE.DataTexture>, THREE.WebGLRenderTarget<THREE.DataTexture>];
+export class GPUResourceManager {
+  private targets: [WebGLRenderTarget<DataTexture>, WebGLRenderTarget<DataTexture>];
   private readIndex: 0 | 1 = 0;
   private _config: GPUResourceConfig;
 
@@ -44,22 +31,21 @@ export class GPUResourceManager implements IGPUResourceManager {
       width: options.width,
       height: options.height,
       count: options.count ?? 2,
-      type: options.type ?? THREE.FloatType,
-      minFilter: options.minFilter ?? THREE.NearestFilter,
-      magFilter: options.magFilter ?? THREE.NearestFilter,
+      type: options.type ?? FloatType,
+      minFilter: options.minFilter ?? NearestFilter,
+      magFilter: options.magFilter ?? NearestFilter,
     };
     this.targets = GPUResourceManager.createRenderTargets(this._config);
   }
 
-  public get readTarget(): THREE.WebGLRenderTarget<THREE.DataTexture> {
+  public get currentTextures() {
+    return this.targets[this.readIndex].textures;
+  }
+  public get readTarget() {
     return this.targets[this.readIndex];
   }
-  public get writeTarget(): THREE.WebGLRenderTarget<THREE.DataTexture> {
+  public get writeTarget() {
     return this.targets[1 - this.readIndex];
-  }
-
-  public get currentConfig() {
-    return this._config;
   }
 
   public swap() {
@@ -82,7 +68,7 @@ export class GPUResourceManager implements IGPUResourceManager {
     this.readIndex = 0;
   }
 
-  clear(gl: THREE.WebGLRenderer, requiredRenderTarget = gl.getRenderTarget()) {
+  clear(gl: WebGLRenderer, requiredRenderTarget = gl.getRenderTarget()) {
     this.targets.forEach(target => {
       gl.setRenderTarget(target);
       gl.clear(true, true, true);
@@ -102,7 +88,7 @@ export class GPUResourceManager implements IGPUResourceManager {
     ] satisfies GPUResourceManager['targets'];
   }
   private static createRenderTarget(config: GPUResourceConfig) {
-    return new THREE.WebGLRenderTarget<THREE.DataTexture>(config.width, config.height, {
+    return new WebGLRenderTarget<DataTexture>(config.width, config.height, {
       count: config.count,
       type: config.type,
       minFilter: config.minFilter,

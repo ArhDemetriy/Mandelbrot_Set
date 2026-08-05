@@ -38,8 +38,18 @@ export class ComputePass {
 
   public render({ gl, result, state }: { gl: WebGLRenderer; result: DataTexture; state: DataTexture }) {
     const uniforms = this.getUniforms();
+    uniforms.u_prev_result.value = result;
+    uniforms.u_prev_state.value = state;
 
     this.quadRender(gl, this.material);
+  }
+
+  public setOffset(offset: [number, number]) {
+    this.getUniforms().u_offset.value.set(offset[0], offset[1]);
+  }
+
+  public setScale({ zoom, height }: { zoom: number; height: number }) {
+    this.getUniforms().u_view.value.setX(1 / (zoom * height));
   }
 
   public dispose() {
