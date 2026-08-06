@@ -143,7 +143,6 @@ export class MandelbrotEngine {
   // управление рендером
   public readonly thisFreeStep: MandelbrotEngine['step'];
 
-  private isOddFrame = false;
   public step(..._props: Parameters<RenderCallback>) {
     if (this.shiftPass.existShift()) {
       let textures = this.targets.currentTextures;
@@ -198,20 +197,6 @@ export class MandelbrotEngine {
       this.screen();
       this.invalidate();
     }
-  }
-  private shift() {
-    const { currentTextures, writeTarget } = this.targets;
-
-    this.gl.setRenderTarget(writeTarget);
-    this.shiftPass.render({
-      gl: this.gl,
-      result: currentTextures[0],
-      state: currentTextures[1],
-    });
-    this.gl.setRenderTarget(null);
-
-    this.shiftPass.resetShift();
-    this.targets.swap();
   }
 
   private compute() {
