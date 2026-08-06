@@ -143,51 +143,10 @@ export class MandelbrotEngine {
   // управление рендером
   public readonly thisFreeStep: MandelbrotEngine['step'];
 
-  public step(..._props: Parameters<RenderCallback>) {
+  public step(...props: Parameters<RenderCallback>) {
     if (this.shiftPass.existShift()) {
-      let textures = this.targets.currentTextures;
-      this.gl.setRenderTarget(this.targets.writeTarget);
-
-      this.shiftPass.render({
-        gl: this.gl,
-        result: textures[0],
-        state: textures[1],
-      });
-
-      this.targets.swap();
-      this.gl.setRenderTarget(this.targets.writeTarget);
-      textures = this.targets.currentTextures;
-
-      const completeShift = this.shiftPass.resetShift();
-      const { width, height } = this.targets.writeTarget;
-      const scissors = getShiftDirtyRects({
-        dx: completeShift.X,
-        dy: completeShift.Y,
-        width,
-        height,
-      });
-
-      this.computePass.render({
-        gl: this.gl,
-        result: textures[0],
-        state: textures[1],
-        scissors,
-      });
-
-      this.targets.swap();
-      this.gl.setRenderTarget(this.targets.writeTarget);
-      textures = this.targets.currentTextures;
-
-      this.computePass.render({
-        gl: this.gl,
-        result: textures[0],
-        state: textures[1],
-        scissors,
-      });
-
-      this.targets.swap();
+      this.shift(...props);
       this.screen();
-
       this.invalidate();
       return;
     }
@@ -199,6 +158,51 @@ export class MandelbrotEngine {
     }
   }
 
+  private shift(...props: Parameters<RenderCallback>) {
+    const { gl } = props[0];
+    let textures = this.targets.currentTextures;
+    gl.setRenderTarget(this.targets.writeTarget);
+
+    this.shiftPass.render({
+      gl,
+      result: textures[0],
+      state: textures[1],
+    });
+
+    const completeShift = this.shiftPass.resetShift();
+    const { width, height } = this.targets.writeTarget;
+    const scissors = getShiftDirtyRects({
+      dx: completeShift.X,
+      dy: completeShift.Y,
+      width,
+      height,
+    });
+
+    this.targets.swap();
+    textures = this.targets.currentTextures;
+    gl.setRenderTarget(this.targets.writeTarget);
+
+    this.computePass.render({
+      gl,
+      result: textures[0],
+      state: textures[1],
+      scissors,
+    });
+
+    this.targets.swap();
+    textures = this.targets.currentTextures;
+    gl.setRenderTarget(this.targets.writeTarget);
+
+    this.computePass.render({
+      gl,
+      result: textures[0],
+      state: textures[1],
+      scissors,
+    });
+
+    this.targets.swap();
+    this.gl.setRenderTarget(null);
+  }
   private compute() {
     const { currentTextures, writeTarget } = this.targets;
 
