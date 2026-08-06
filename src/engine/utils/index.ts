@@ -1,1 +1,1 @@
-export { getShiftDirtyRects } from './scissor';
+export { getShiftDirtyRects, type ScissorBox } from './scissor';

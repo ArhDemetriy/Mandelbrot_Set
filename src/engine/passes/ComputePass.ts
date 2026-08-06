@@ -12,12 +12,12 @@ import vertexShader from '@/shaders/mandelbrot/mandelbrot.vert?raw';
 
 export class ComputePass {
   private readonly material: ShaderMaterial;
-  private readonly quadRender: (gl: WebGLRenderer, material: ShaderMaterial) => void;
+  private readonly quadRender: (props: { gl: WebGLRenderer; material?: ShaderMaterial }) => void;
   constructor({
     render,
     ...initUniforms
   }: {
-    render(gl: WebGLRenderer, material: ShaderMaterial): void;
+    render(props: { gl: WebGLRenderer; material?: ShaderMaterial }): void;
 
     zoom: number;
     height: number;
@@ -42,7 +42,7 @@ export class ComputePass {
     uniforms.u_prev_result.value = result;
     uniforms.u_prev_state.value = state;
 
-    this.quadRender(gl, this.material);
+    this.quadRender({ gl, material: this.material });
   }
 
   public setOffset(offset: [number, number]) {

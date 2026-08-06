@@ -5,12 +5,12 @@ import paletteShader from '@/shaders/mandelbrot/mandelbrotPalette.frag?raw';
 
 export class ScreenPass<TTexture extends Texture = Texture> {
   private readonly material: ShaderMaterial;
-  private readonly quadRender: (gl: WebGLRenderer, material: ShaderMaterial) => void;
+  private readonly quadRender: (props: { gl: WebGLRenderer; material?: ShaderMaterial }) => void;
   constructor({
     render,
     ...initUniforms
   }: {
-    render(gl: WebGLRenderer, material: ShaderMaterial): void;
+    render(props: { gl: WebGLRenderer; material?: ShaderMaterial }): void;
     result: TTexture;
     paletteA: Vector3;
     paletteB: Vector3;
@@ -46,7 +46,7 @@ export class ScreenPass<TTexture extends Texture = Texture> {
 
   public render(gl: WebGLRenderer, computeResultTexture: TTexture) {
     this.getUniforms().u_compute_result.value = computeResultTexture;
-    this.quadRender(gl, this.material);
+    this.quadRender({ gl, material: this.material });
   }
 
   public dispose() {

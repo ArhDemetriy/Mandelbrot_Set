@@ -1,4 +1,4 @@
-interface ScissorBox {
+export interface ScissorBox {
   x: number;
   y: number;
   width: number;
