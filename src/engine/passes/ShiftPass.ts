@@ -51,8 +51,15 @@ export class ShiftPass<TTexture extends Texture = Texture> {
   }
   public resetShift() {
     const { value: uOffset } = this.getUniforms().u_offset;
+    const shift = {
+      /** deleted shift X */
+      X: uOffset.x,
+      /** deleted shift Y */
+      Y: uOffset.y,
+    } as const;
     uOffset.setX(0);
     uOffset.setY(0);
+    return shift;
   }
 
   public setSize(width: number, height: number) {

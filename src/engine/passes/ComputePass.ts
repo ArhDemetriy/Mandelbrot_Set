@@ -10,14 +10,20 @@ import {
 import f32Shader from '@/shaders/mandelbrot/2D/mandelbrotF32.frag?raw';
 import vertexShader from '@/shaders/mandelbrot/mandelbrot.vert?raw';
 
+import type { ScissorBox } from '../utils';
+
 export class ComputePass {
   private readonly material: ShaderMaterial;
-  private readonly quadRender: (props: { gl: WebGLRenderer; material?: ShaderMaterial }) => void;
+  private readonly quadRender: (props: {
+    gl: WebGLRenderer;
+    material?: ShaderMaterial;
+    scissors?: ScissorBox[];
+  }) => void;
   constructor({
     render,
     ...initUniforms
   }: {
-    render(props: { gl: WebGLRenderer; material?: ShaderMaterial }): void;
+    render(props: { gl: WebGLRenderer; material?: ShaderMaterial; scissors?: ScissorBox[] }): void;
 
     zoom: number;
     height: number;
@@ -37,12 +43,22 @@ export class ComputePass {
     });
   }
 
-  public render({ gl, result, state }: { gl: WebGLRenderer; result: DataTexture; state: DataTexture }) {
+  public render({
+    gl,
+    result,
+    state,
+    scissors,
+  }: {
+    gl: WebGLRenderer;
+    result: DataTexture;
+    state: DataTexture;
+    scissors?: ScissorBox[];
+  }) {
     const uniforms = this.getUniforms();
     uniforms.u_prev_result.value = result;
     uniforms.u_prev_state.value = state;
 
-    this.quadRender({ gl, material: this.material });
+    this.quadRender({ gl, material: this.material, scissors });
   }
 
   public setOffset(offset: [number, number]) {

@@ -10,7 +10,7 @@ uniform sampler2D u_prev_state;
 uniform vec4 u_offset;
 
 #define NEVER 0.0
-#define SAFE_ZONE 5
+#define SAFE_ZONE 0
 
 void main() {
     ivec2 pixelCoord = ivec2(gl_FragCoord.xy + u_offset.xy);

@@ -44,7 +44,7 @@ export class ScreenPass<TTexture extends Texture = Texture> {
     this.material.uniforms.u_palette_d.value = paletteD;
   }
 
-  public render(gl: WebGLRenderer, computeResultTexture: TTexture) {
+  public render({ gl, computeResultTexture }: { gl: WebGLRenderer; computeResultTexture: TTexture }) {
     this.getUniforms().u_compute_result.value = computeResultTexture;
     this.quadRender({ gl, material: this.material });
   }

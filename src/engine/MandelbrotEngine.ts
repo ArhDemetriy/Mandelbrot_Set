@@ -146,10 +146,49 @@ export class MandelbrotEngine {
   private isOddFrame = false;
   public step(..._props: Parameters<RenderCallback>) {
     if (this.shiftPass.existShift()) {
-      this.shift();
-      if (this.isOddFrame) this.compute();
+      let textures = this.targets.currentTextures;
+      this.gl.setRenderTarget(this.targets.writeTarget);
+
+      this.shiftPass.render({
+        gl: this.gl,
+        result: textures[0],
+        state: textures[1],
+      });
+
+      this.targets.swap();
+      this.gl.setRenderTarget(this.targets.writeTarget);
+      textures = this.targets.currentTextures;
+
+      const completeShift = this.shiftPass.resetShift();
+      const { width, height } = this.targets.writeTarget;
+      const scissors = getShiftDirtyRects({
+        dx: completeShift.X,
+        dy: completeShift.Y,
+        width,
+        height,
+      });
+
+      this.computePass.render({
+        gl: this.gl,
+        result: textures[0],
+        state: textures[1],
+        scissors,
+      });
+
+      this.targets.swap();
+      this.gl.setRenderTarget(this.targets.writeTarget);
+      textures = this.targets.currentTextures;
+
+      this.computePass.render({
+        gl: this.gl,
+        result: textures[0],
+        state: textures[1],
+        scissors,
+      });
+
+      this.targets.swap();
       this.screen();
-      this.isOddFrame = !this.isOddFrame;
+
       this.invalidate();
       return;
     }
@@ -170,8 +209,8 @@ export class MandelbrotEngine {
       state: currentTextures[1],
     });
     this.gl.setRenderTarget(null);
-    this.shiftPass.resetShift();
 
+    this.shiftPass.resetShift();
     this.targets.swap();
   }
 
@@ -191,7 +230,7 @@ export class MandelbrotEngine {
   }
   private screen() {
     this.gl.setRenderTarget(null);
-    this.screenPass.render(this.gl, this.targets.currentTextures[0]);
+    this.screenPass.render({ gl: this.gl, computeResultTexture: this.targets.currentTextures[0] });
   }
   private iterations = 0;
   private isFullCompute() {
