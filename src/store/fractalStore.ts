@@ -1,5 +1,5 @@
 import { atom } from 'jotai';
-import * as THREE from 'three';
+import { Vector3 } from 'three';
 
 export type ColorPalette = 'classic' | 'fire' | 'electric' | 'psychedelic' | 'monochrome';
 
@@ -39,39 +39,39 @@ export const paletteMapAtom = atom(get => {
   switch (get(paletteAtom)) {
     case 'fire':
       return {
-        a: new THREE.Vector3(0.5, 0.5, 0.5),
-        b: new THREE.Vector3(0.5, 0.5, 0.5),
-        c: new THREE.Vector3(2.0, 1.0, 0.0),
-        d: new THREE.Vector3(0.5 * TWO_PI, 0.2 * TWO_PI, 0.25 * TWO_PI),
+        a: new Vector3(0.5, 0.5, 0.5),
+        b: new Vector3(0.5, 0.5, 0.5),
+        c: new Vector3(2.0, 1.0, 0.0),
+        d: new Vector3(0.5 * TWO_PI, 0.2 * TWO_PI, 0.25 * TWO_PI),
       };
     case 'electric':
       return {
-        a: new THREE.Vector3(0.8, 0.5, 0.4),
-        b: new THREE.Vector3(0.2, 0.4, 0.2),
-        c: new THREE.Vector3(2.0, 1.0, 1.0),
-        d: new THREE.Vector3(0.0, 0.25 * TWO_PI, 0.25 * TWO_PI),
+        a: new Vector3(0.8, 0.5, 0.4),
+        b: new Vector3(0.2, 0.4, 0.2),
+        c: new Vector3(2.0, 1.0, 1.0),
+        d: new Vector3(0.0, 0.25 * TWO_PI, 0.25 * TWO_PI),
       };
     case 'psychedelic':
       return {
-        a: new THREE.Vector3(0.5, 0.5, 0.5),
-        b: new THREE.Vector3(0.5, 0.5, 0.5),
-        c: new THREE.Vector3(2.0, 2.0, 1.0),
-        d: new THREE.Vector3(0.0, 0.1 * TWO_PI, 0.2 * TWO_PI),
+        a: new Vector3(0.5, 0.5, 0.5),
+        b: new Vector3(0.5, 0.5, 0.5),
+        c: new Vector3(2.0, 2.0, 1.0),
+        d: new Vector3(0.0, 0.1 * TWO_PI, 0.2 * TWO_PI),
       };
     case 'monochrome':
       return {
-        a: new THREE.Vector3(0.5, 0.5, 0.5),
-        b: new THREE.Vector3(0.5, 0.5, 0.5),
-        c: new THREE.Vector3(1.0, 1.0, 1.0),
-        d: new THREE.Vector3(0.0, 0.0, 0.0),
+        a: new Vector3(0.5, 0.5, 0.5),
+        b: new Vector3(0.5, 0.5, 0.5),
+        c: new Vector3(1.0, 1.0, 1.0),
+        d: new Vector3(0.0, 0.0, 0.0),
       };
     case 'classic':
     default:
       return {
-        a: new THREE.Vector3(0.5, 0.5, 0.5),
-        b: new THREE.Vector3(0.5, 0.5, 0.5),
-        c: new THREE.Vector3(1.0, 1.0, 1.0),
-        d: new THREE.Vector3(0.0, 0.33 * TWO_PI, 0.67 * TWO_PI),
+        a: new Vector3(0.5, 0.5, 0.5),
+        b: new Vector3(0.5, 0.5, 0.5),
+        c: new Vector3(1.0, 1.0, 1.0),
+        d: new Vector3(0.0, 0.33 * TWO_PI, 0.67 * TWO_PI),
       };
   }
 });

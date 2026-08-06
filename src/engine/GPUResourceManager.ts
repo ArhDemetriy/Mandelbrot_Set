@@ -68,7 +68,7 @@ export class GPUResourceManager {
     this.readIndex = 0;
   }
 
-  clear(gl: WebGLRenderer, requiredRenderTarget = gl.getRenderTarget()) {
+  public clear(gl: WebGLRenderer, requiredRenderTarget = gl.getRenderTarget()) {
     this.targets.forEach(target => {
       gl.setRenderTarget(target);
       gl.clear(true, true, true);

@@ -20,8 +20,9 @@ export class ComputePass {
     render(gl: WebGLRenderer, material: ShaderMaterial): void;
 
     zoom: number;
-    width?: number;
     height: number;
+    iterationsPerFrame: number;
+    maxIterations: number;
     offset: [number, number];
     result: DataTexture;
     state: DataTexture;
@@ -63,19 +64,25 @@ export class ComputePass {
   private static makeInitComputeUniforms({
     zoom,
     height,
+    iterationsPerFrame,
+    maxIterations,
     offset,
     result,
     state,
   }: {
     zoom: number;
-    width?: number;
     height: number;
+    iterationsPerFrame: number;
+    maxIterations: number;
     offset: [number, number];
     result: DataTexture;
     state: DataTexture;
   }) {
     return {
-      u_const: { value: new Vector2(20, 10000) },
+      u_const: {
+        /** iterationsPerFrame, maxIterations */
+        value: new Vector2(iterationsPerFrame, maxIterations),
+      },
       u_offset: {
         /** ...offset */
         value: new Vector2(offset[0], offset[1]),

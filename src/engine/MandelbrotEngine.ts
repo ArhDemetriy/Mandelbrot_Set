@@ -1,5 +1,13 @@
 import type { RenderCallback } from '@react-three/fiber';
-import * as THREE from 'three';
+import {
+  type DataTexture,
+  FloatType,
+  NearestFilter,
+  type RenderTargetOptions,
+  type ShaderMaterial,
+  type Vector3,
+  type WebGLRenderer,
+} from 'three';
 
 import { GPUResourceManager } from './GPUResourceManager';
 import { ComputePass } from './passes/ComputePass';
@@ -8,11 +16,11 @@ import { ScreenPass } from './passes/ScreenPass';
 import { ShiftPass } from './passes/ShiftPass';
 
 export class MandelbrotEngine {
-  private readonly quadRenderer = new QuadRenderer<THREE.ShaderMaterial>();
-  private readonly shiftPass: ShiftPass<THREE.DataTexture>;
+  private readonly quadRenderer = new QuadRenderer<ShaderMaterial>();
+  private readonly shiftPass: ShiftPass<DataTexture>;
   private readonly computePass: ComputePass;
 
-  private readonly screenPass: ScreenPass<THREE.DataTexture>;
+  private readonly screenPass: ScreenPass<DataTexture>;
   private readonly targets: GPUResourceManager;
   constructor({
     gl,
@@ -28,17 +36,17 @@ export class MandelbrotEngine {
     paletteC,
     paletteD,
   }: {
-    gl: THREE.WebGLRenderer;
+    gl: WebGLRenderer;
     invalidate: (frames?: number | undefined) => void;
     width: number;
     height: number;
     zoom: number;
     offset: [number, number];
 
-    paletteA: THREE.Vector3;
-    paletteB: THREE.Vector3;
-    paletteC: THREE.Vector3;
-    paletteD: THREE.Vector3;
+    paletteA: Vector3;
+    paletteB: Vector3;
+    paletteC: Vector3;
+    paletteD: Vector3;
   }) {
     this.currentHeight = height;
     this.currentZoom = zoom;
@@ -63,8 +71,9 @@ export class MandelbrotEngine {
       render,
       result: currentTextures[0],
       state: currentTextures[1],
-      width,
       height,
+      iterationsPerFrame: MandelbrotEngine.iterationsPerFrame,
+      maxIterations: MandelbrotEngine.maxIterations,
       zoom,
       offset,
     });
@@ -191,10 +200,10 @@ export class MandelbrotEngine {
     this.iterations = 0;
   }
   private incCompute() {
-    this.iterations += MandelbrotEngine.iterationOnFrame;
+    this.iterations += MandelbrotEngine.iterationsPerFrame;
   }
 
-  private static iterationOnFrame = 20;
+  private static iterationsPerFrame = 20;
   private static maxIterations = 10000;
 
   public setPalette(palettes: Parameters<ScreenPass['setPalette']>[0]) {
@@ -210,17 +219,17 @@ export class MandelbrotEngine {
     this.targets.dispose();
   }
 
-  public setGl(gl: THREE.WebGLRenderer) {
+  public setGl(gl: WebGLRenderer) {
     this.gl = gl;
   }
-  private gl: THREE.WebGLRenderer;
+  private gl: WebGLRenderer;
 
   private static getRenderTargetOptions() {
     return {
       count: 2,
-      minFilter: THREE.NearestFilter,
-      magFilter: THREE.NearestFilter,
-      type: THREE.FloatType,
-    } satisfies THREE.RenderTargetOptions;
+      minFilter: NearestFilter,
+      magFilter: NearestFilter,
+      type: FloatType,
+    } satisfies RenderTargetOptions;
   }
 }
