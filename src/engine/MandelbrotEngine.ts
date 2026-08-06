@@ -14,6 +14,7 @@ import { ComputePass } from './passes/ComputePass';
 import { QuadRenderer } from './passes/QuadRenderer';
 import { ScreenPass } from './passes/ScreenPass';
 import { ShiftPass } from './passes/ShiftPass';
+import { getShiftDirtyRects } from './utils';
 
 export class MandelbrotEngine {
   private readonly quadRenderer = new QuadRenderer<ShaderMaterial>();

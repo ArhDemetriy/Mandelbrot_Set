@@ -1,0 +1,1 @@
+export { getShiftDirtyRects } from './scissor';
