@@ -4,6 +4,7 @@ import {
   ShaderMaterial,
   type ShaderMaterialProperties,
   Vector2,
+  Vector3,
   type WebGLRenderer,
 } from 'three';
 
@@ -26,6 +27,7 @@ export class ComputePass {
     render(props: { gl: WebGLRenderer; material?: ShaderMaterial; scissors?: ScissorBox[] }): void;
 
     zoom: number;
+    width: number;
     height: number;
     iterationsPerFrame: number;
     maxIterations: number;
@@ -65,8 +67,8 @@ export class ComputePass {
     this.getUniforms().u_offset.value.set(offset[0], offset[1]);
   }
 
-  public setScale({ zoom, height }: { zoom: number; height: number }) {
-    this.getUniforms().u_view.value.setX(1 / (zoom * height));
+  public setScale({ zoom, width, height }: { zoom: number; height: number; width: number }) {
+    this.getUniforms().u_view.value.set(1 / (zoom * height), width / 2, height / 2);
   }
 
   public dispose() {
@@ -79,6 +81,7 @@ export class ComputePass {
 
   private static makeInitComputeUniforms({
     zoom,
+    width,
     height,
     iterationsPerFrame,
     maxIterations,
@@ -88,6 +91,7 @@ export class ComputePass {
   }: {
     zoom: number;
     height: number;
+    width: number;
     iterationsPerFrame: number;
     maxIterations: number;
     offset: [number, number];
@@ -104,8 +108,8 @@ export class ComputePass {
         value: new Vector2(offset[0], offset[1]),
       },
       u_view: {
-        /** texelScale/height */
-        value: new Vector2(zoom / height),
+        /** 1/(zoom*height), width/2, height/2  */
+        value: new Vector3(1 / (zoom / height), width / 2, height / 2),
       },
       u_prev_result: { value: result },
       u_prev_state: { value: state },

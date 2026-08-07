@@ -10,9 +10,9 @@ const DEFAULT_STATE: {
   palette: ColorPalette;
   moveSpeed: number;
 } = {
-  offset: [-1.5, -0.5],
+  offset: [-0.75, -0.0],
   zoom: 1.0,
-  maxIterations: 200,
+  maxIterations: 20,
   palette: 'classic',
   moveSpeed: 1.0,
 };

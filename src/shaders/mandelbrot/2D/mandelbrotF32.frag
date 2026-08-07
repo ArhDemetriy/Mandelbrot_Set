@@ -7,8 +7,8 @@ layout(location = 1) out vec4 pc_state;
 
 /** ITERATION_ON_FRAME, MAX_ITERATIONS */
 uniform vec2 u_const;
-/** 1/(zoom*height) */
-uniform vec2 u_view;
+/** 1/(zoom*height), width/2, height/2  */
+uniform vec3 u_view;
 /** ...offset */
 uniform vec2 u_offset;
 /** iteration, dot, status, NEVER */
@@ -40,7 +40,7 @@ void main() {
     vec2 z = prevIterations <= 0 ? vec2(0.0) : prevState.xy;
     vec2 dz = prevIterations <= 0 ? vec2(0.0) : prevState.zw;
 
-    vec2 c = gl_FragCoord.xy * u_view.x + u_offset.xy;
+    vec2 c = (gl_FragCoord.xy - u_view.yz) * u_view.x + u_offset.xy;
 
     vec2 checkZ = z;
     int power = 1;

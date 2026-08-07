@@ -50,6 +50,7 @@ export class MandelbrotEngine {
     paletteD: Vector3;
   }) {
     this.currentHeight = height;
+    this.currentWidth = width;
     this.currentZoom = zoom;
     this.currentOffset = offset;
     this.gl = gl;
@@ -72,6 +73,7 @@ export class MandelbrotEngine {
       render,
       result: currentTextures[0],
       state: currentTextures[1],
+      width,
       height,
       iterationsPerFrame: MandelbrotEngine.iterationsPerFrame,
       maxIterations: MandelbrotEngine.maxIterations,
@@ -99,9 +101,10 @@ export class MandelbrotEngine {
 
   public setSize(width: number, height: number) {
     this.currentHeight = height;
+    this.currentWidth = width;
 
     this.targets.resize(width, height);
-    this.computePass.setScale({ zoom: this.currentZoom, height });
+    this.computePass.setScale({ zoom: this.currentZoom, width, height });
     this.shiftPass.resetShift();
     this.shiftPass.setSize(width, height);
 
@@ -113,7 +116,7 @@ export class MandelbrotEngine {
   public setZoom(zoom: number) {
     this.currentZoom = zoom;
 
-    this.computePass.setScale({ zoom, height: this.currentHeight });
+    this.computePass.setScale({ zoom, width: this.currentWidth, height: this.currentHeight });
     this.shiftPass.resetShift();
 
     this.targets.clear(this.gl, null);
@@ -121,6 +124,7 @@ export class MandelbrotEngine {
     this.invalidate();
   }
   private currentHeight: number;
+  private currentWidth: number;
   private currentZoom: number;
 
   public setOffset(offset: [number, number]) {
