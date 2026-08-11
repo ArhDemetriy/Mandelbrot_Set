@@ -150,14 +150,14 @@ export class MandelbrotEngine {
   public step(...props: Parameters<RenderCallback>) {
     if (this.shiftPass.existShift()) {
       this.shift(...props);
-      this.screen();
+      this.screen(...props);
       this.invalidate();
       return;
     }
 
     if (!this.isFullCompute()) {
-      this.compute();
-      this.screen();
+      this.compute(...props);
+      this.screen(...props);
       this.invalidate();
     }
   }
@@ -207,23 +207,25 @@ export class MandelbrotEngine {
     this.targets.swap();
     this.gl.setRenderTarget(null);
   }
-  private compute() {
+  private compute(...props: Parameters<RenderCallback>) {
+    const { gl } = props[0];
     const { currentTextures, writeTarget } = this.targets;
 
-    this.gl.setRenderTarget(writeTarget);
+    gl.setRenderTarget(writeTarget);
     this.computePass.render({
-      gl: this.gl,
+      gl,
       result: currentTextures[0],
       state: currentTextures[1],
     });
-    this.gl.setRenderTarget(null);
+    gl.setRenderTarget(null);
 
     this.targets.swap();
     this.incCompute();
   }
-  private screen() {
-    this.gl.setRenderTarget(null);
-    this.screenPass.render({ gl: this.gl, computeResultTexture: this.targets.currentTextures[0] });
+  private screen(...props: Parameters<RenderCallback>) {
+    const { gl } = props[0];
+    gl.setRenderTarget(null);
+    this.screenPass.render({ gl, computeResultTexture: this.targets.currentTextures[0] });
   }
   private iterations = 0;
   private isFullCompute() {
