@@ -7,6 +7,11 @@ uniform vec3 u_const;
 /** iteration, dot, status, _ */
 uniform sampler2D u_compute_result;
 
+// --- Юниформы фолбека (Зум относительно центра) ---
+uniform sampler2D u_prev_color;    // Текстура финального цвета прошлого кадра
+uniform float u_zoom_scale;        // Коэффициент масштаба (>1.0 — приближение, <1.0 — отдаление)
+uniform vec2 u_resolution;        // Разрешение экрана (ширина, высота)
+
 uniform vec3 u_palette_a;
 uniform vec3 u_palette_b;
 uniform vec3 u_palette_c;
@@ -31,6 +36,26 @@ void main() {
     vec3 data = texelFetch(u_compute_result, pixelCoord, 0).xyz;
 
     float status = data.z;
+
+    // // 1. Фолбек: если точка еще не вычислена (NEVER)
+    // if(status == NEVER) {
+    //     // Нормализованные UV текущего пикселя (от 0.0 до 1.0)
+    //     vec2 uv = gl_FragCoord.xy / u_resolution;
+
+    //     // Вычисляем UV предыдущего кадра относительно центра (0.5, 0.5)
+    //     vec2 oldUV = vec2(0.5) + (uv - vec2(0.5)) / u_zoom_scale;
+
+    //     // Защита от вылета за границы текстуры (краим черным)
+    //     if(oldUV.x < 0.0 || oldUV.x > 1.0 || oldUV.y < 0.0 || oldUV.y > 1.0) {
+    //         pc_color = vec4(0.0, 0.0, 0.0, 1.0);
+    //     } else {
+    //         // Билинейная сэмпляция из прошлой цветной текстуры
+    //         pc_color = texture(u_prev_color, oldUV);
+    //     }
+    //     return;
+    // }
+
+    // 2. Стандартный вывод для внутренних точек / ошибок
     if(status == PREC_ERR || status == LIM_ESC) {
         pc_color = vec4(0.0, 0.0, 0.0, 1.0);
         return;
