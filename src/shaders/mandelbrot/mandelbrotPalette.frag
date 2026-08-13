@@ -6,9 +6,9 @@ uniform vec3 u_const;
 
 /** iteration, dot, status, _ */
 uniform sampler2D u_compute_result;
+uniform sampler2D u_prev_color;
 
 // --- Юниформы фолбека (Зум относительно центра) ---
-uniform sampler2D u_prev_color;    // Текстура финального цвета прошлого кадра
 uniform float u_zoom_scale;        // Коэффициент масштаба (>1.0 — приближение, <1.0 — отдаление)
 uniform vec2 u_resolution;        // Разрешение экрана (ширина, высота)
 
@@ -18,9 +18,10 @@ uniform vec3 u_palette_c;
 uniform vec3 u_palette_d;
 
 #define NEVER 0.0
-#define LIM_ESC -1.0
 #define INF_ESC -2.0
 #define PREC_ERR -3.0
+#define LIM_FRAME -4.0
+#define LIM_MAX -4.0
 
 vec3 getPaletteColor(float t) {
     return u_palette_a + u_palette_b * cos(u_const.x * fract(u_palette_c * t) + u_palette_d);
@@ -37,8 +38,20 @@ void main() {
 
     float status = data.z;
 
-    // // 1. Фолбек: если точка еще не вычислена (NEVER)
-    // if(status == NEVER) {
+    if(status == NEVER || status == PREC_ERR || status == LIM_MAX) {
+        pc_color = vec4(0.0, 0.0, 0.0, 1.0);
+        return;
+    }
+
+    if(status == LIM_FRAME) {
+        // Фолбек
+        // TODO Выводим итем из кадра-подложки
+        pc_color = vec4(0.0, 0.0, 0.0, 1.0);
+        return;
+    }
+
+    // // Фолбек: если точка еще не вычислена (LIM_FRAME)
+    // if(status == LIM_FRAME) {
     //     // Нормализованные UV текущего пикселя (от 0.0 до 1.0)
     //     vec2 uv = gl_FragCoord.xy / u_resolution;
 
@@ -54,12 +67,6 @@ void main() {
     //     }
     //     return;
     // }
-
-    // 2. Стандартный вывод для внутренних точек / ошибок
-    if(status == PREC_ERR || status == LIM_ESC) {
-        pc_color = vec4(0.0, 0.0, 0.0, 1.0);
-        return;
-    }
 
     float t = getSmoothIter(data.y, data.x) / 30.0;
     pc_color = vec4(getPaletteColor(t), 1.0);

@@ -17,9 +17,10 @@ uniform sampler2D u_prev_result;
 uniform sampler2D u_prev_state;
 
 #define NEVER 0.0
-#define LIM_ESC -1.0
 #define INF_ESC -2.0
 #define PREC_ERR -3.0
+#define LIM_FRAME -4.0
+#define LIM_MAX -4.0
 
 void main() {
     ivec2 pixelCoord = ivec2(gl_FragCoord.xy);
@@ -63,13 +64,15 @@ void main() {
         }
 
         count++;
-        if(count == power) {
+        if(count >= power) {
             checkZ = z;
             power <<= 1;
             count = 0;
         }
     }
 
-    pc_result = vec4(float(prevIterations + iterationOnFrame), dot(z, z), LIM_ESC, NEVER);
+    float currentIteration = float(prevIterations + iterationOnFrame);
+    bool outOfMaxIterations = currentIteration >= u_const.y;
+    pc_result = vec4(currentIteration, dot(z, z), outOfMaxIterations ? LIM_MAX : LIM_FRAME, NEVER);
     pc_state = vec4(z, dz);
 }
