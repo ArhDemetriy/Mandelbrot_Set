@@ -42,6 +42,9 @@ export function FractalMesh() {
 
   useEffect(() => {
     gl.autoClear = false;
+    gl.autoClearColor = false;
+    gl.autoClearDepth = false;
+    gl.autoClearStencil = false;
     mandelbrotEngine.setGl(gl);
   }, [gl, mandelbrotEngine]);
 

@@ -1,71 +1,74 @@
 import { GLSL3, ShaderMaterial, type ShaderMaterialProperties, type Texture, Vector4, type WebGLRenderer } from 'three';
 
-import shiftShader from '@/shaders/mandelbrot/2D/mandelbrotF32Shift.frag?raw';
 import vertexShader from '@/shaders/mandelbrot/mandelbrot.vert?raw';
+import zoomShader from '@/shaders/mandelbrot/mandelbrotZoom.frag?raw';
 
 export class ZoomPass<TTexture extends Texture = Texture> {
   private readonly material: ShaderMaterial;
   private readonly quadRender: (props: { gl: WebGLRenderer; material?: ShaderMaterial }) => void;
+
+  private prevZoom: number;
+  private zoom: number;
+  private width: number;
+  private height: number;
   constructor({
     render,
-    ...initUniforms
+    zoom,
+    width,
+    height,
+    result,
   }: {
     render(props: { gl: WebGLRenderer; material?: ShaderMaterial }): void;
+    zoom: number;
 
     width: number;
     height: number;
     result: TTexture;
-    state: TTexture;
   }) {
     this.quadRender = render;
+    this.width = width;
+    this.height = height;
+    this.prevZoom = this.zoom = zoom;
 
     this.material = new ShaderMaterial({
       glslVersion: GLSL3,
-      fragmentShader: shiftShader,
+      fragmentShader: zoomShader,
       vertexShader,
-      uniforms: ZoomPass.makeInitShiftUniforms(initUniforms),
+      uniforms: ZoomPass.makeInitUniforms({
+        width,
+        height,
+        result,
+      }),
     });
   }
 
-  public render({ gl, result, state }: { gl: WebGLRenderer; result: TTexture; state: TTexture }) {
-    if (!this.existShift()) return;
+  public render({ gl, result }: { gl: WebGLRenderer; result: TTexture; state: TTexture }) {
+    if (!this.existZoomScale()) return;
+
+    const scale = this.zoom / this.prevZoom;
+    const { height, width } = this;
 
     const uniforms = this.getUniforms();
     uniforms.u_prev_result.value = result;
-    uniforms.u_prev_state.value = state;
+    uniforms.u_resolution.value.set(height / 2, width / 2, 1 / (height * scale), 1 / (width * scale));
 
     this.quadRender({ gl, material: this.material });
   }
 
-  public incShift({ X, Y }: { X: number; Y: number }) {
-    const { value: uOffset } = this.getUniforms().u_offset;
-    const xShift = uOffset.x + X;
-    const yShift = uOffset.y + Y;
-    uOffset.setX(xShift);
-    uOffset.setY(yShift);
+  public setZoom({ zoom }: { zoom: number }) {
+    this.zoom = zoom;
   }
 
-  public existShift() {
-    const { value: uOffset } = this.getUniforms().u_offset;
-    return Boolean(uOffset.x || uOffset.y);
+  public existZoomScale() {
+    return this.prevZoom !== this.zoom;
   }
-  public resetShift() {
-    const { value: uOffset } = this.getUniforms().u_offset;
-    const shift = {
-      /** deleted shift X */
-      X: uOffset.x,
-      /** deleted shift Y */
-      Y: uOffset.y,
-    } as const;
-    uOffset.setX(0);
-    uOffset.setY(0);
-    return shift;
+  public resetZoom() {
+    this.prevZoom = this.zoom;
   }
 
   public setSize(width: number, height: number) {
-    const { value: uOffset } = this.getUniforms().u_offset;
-    uOffset.setZ(width);
-    uOffset.setW(height);
+    this.width = width;
+    this.height = height;
   }
 
   public dispose() {
@@ -73,27 +76,24 @@ export class ZoomPass<TTexture extends Texture = Texture> {
   }
 
   private getUniforms() {
-    return this.material.uniforms as ReturnType<(typeof ZoomPass)['makeInitShiftUniforms']>;
+    return this.material.uniforms as ReturnType<(typeof ZoomPass)['makeInitUniforms']>;
   }
 
-  private static makeInitShiftUniforms<TTexture extends Texture = Texture>({
+  private static makeInitUniforms<TTexture extends Texture = Texture>({
     width,
     height,
     result,
-    state,
   }: {
     width: number;
     height: number;
     result: TTexture;
-    state: TTexture;
   }) {
     return {
-      u_offset: {
-        /** ...shift, width, height */
-        value: new Vector4(0, 0, width, height),
+      u_resolution: {
+        /** height/2, width/2, 1 / (height * zoom_scale), 1 / (width * zoom_scale) */
+        value: new Vector4(height / 2, width / 2, 1 / height, 1 / width),
       },
       u_prev_result: { value: result },
-      u_prev_state: { value: state },
     } satisfies ShaderMaterialProperties['uniforms'];
   }
 }

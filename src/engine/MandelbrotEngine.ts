@@ -14,11 +14,13 @@ import { ComputePass } from './passes/ComputePass';
 import { QuadRenderer } from './passes/QuadRenderer';
 import { ScreenPass } from './passes/ScreenPass';
 import { ShiftPass } from './passes/ShiftPass';
+import { ZoomPass } from './passes/ZoomPass';
 import { getShiftDirtyRects } from './utils';
 
 export class MandelbrotEngine {
   private readonly quadRenderer = new QuadRenderer<ShaderMaterial>();
   private readonly shiftPass: ShiftPass<DataTexture>;
+  private readonly zoomPass: ZoomPass<DataTexture>;
   private readonly computePass: ComputePass;
 
   private readonly screenPass: ScreenPass<DataTexture>;
@@ -67,6 +69,14 @@ export class MandelbrotEngine {
       state: currentTextures[1],
       width,
       height,
+    });
+
+    this.zoomPass = new ZoomPass({
+      render,
+      result: currentTextures[0],
+      width,
+      height,
+      zoom,
     });
 
     this.computePass = new ComputePass({
