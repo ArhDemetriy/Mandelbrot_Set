@@ -14,13 +14,11 @@ import { ComputePass } from './passes/ComputePass';
 import { QuadRenderer } from './passes/QuadRenderer';
 import { ScreenPass } from './passes/ScreenPass';
 import { ShiftPass } from './passes/ShiftPass';
-import { ZoomPass } from './passes/ZoomPass';
 import { getShiftDirtyRects } from './utils';
 
 export class MandelbrotEngine {
   private readonly quadRenderer = new QuadRenderer<ShaderMaterial>();
   private readonly shiftPass: ShiftPass<DataTexture>;
-  private readonly zoomPass: ZoomPass<DataTexture>;
   private readonly computePass: ComputePass;
 
   private readonly screenPass: ScreenPass<DataTexture>;
@@ -71,14 +69,6 @@ export class MandelbrotEngine {
       height,
     });
 
-    this.zoomPass = new ZoomPass({
-      render,
-      result: currentTextures[0],
-      width,
-      height,
-      zoom,
-    });
-
     this.computePass = new ComputePass({
       render,
       result: currentTextures[0],
@@ -94,6 +84,9 @@ export class MandelbrotEngine {
     this.screenPass = new ScreenPass({
       render,
       result: currentTextures[0],
+      width,
+      height,
+      zoom,
       paletteA,
       paletteB,
       paletteC,
@@ -117,6 +110,7 @@ export class MandelbrotEngine {
     this.computePass.setScale({ zoom: this.currentZoom, width, height });
     this.shiftPass.resetShift();
     this.shiftPass.setSize(width, height);
+    this.screenPass.setSize({ width, height });
 
     this.targets.clear(this.gl, null);
     this.resetCompute();
@@ -127,9 +121,8 @@ export class MandelbrotEngine {
     this.currentZoom = zoom;
 
     this.computePass.setScale({ zoom, width: this.currentWidth, height: this.currentHeight });
-    this.shiftPass.resetShift();
+    this.screenPass.setZoom({ zoom });
 
-    this.targets.clear(this.gl, null);
     this.resetCompute();
     this.invalidate();
   }
@@ -149,6 +142,7 @@ export class MandelbrotEngine {
       Y: (currentOffsetY - prevOffsetY) * scale,
     });
 
+    this.screenPass.resetZoom();
     this.resetCompute();
     this.invalidate();
   }
@@ -161,6 +155,28 @@ export class MandelbrotEngine {
     if (this.shiftPass.existShift()) {
       this.shift(...props);
       this.screen(...props);
+      this.invalidate();
+      return;
+    }
+
+    // if (this.screenPass.afterZoomStage()) {
+    //   // на время таймаута экран чёрный, потом рендер работает в обычном режиме
+    //   // this.compute(...props);
+    //   // this.screen(...props);
+    //   this.invalidate();
+    //   return;
+    // }
+
+    if (this.screenPass.afterZoomStage()) {
+      // на время зума экран чёрный, после прекращения изменения зума, рендер работает в обычном режиме.
+      this.compute(...props);
+      this.screen(...props);
+      this.invalidate();
+      return;
+    }
+
+    if (this.screenPass.existZoomScale()) {
+      this.zoom(...props);
       this.invalidate();
       return;
     }
@@ -217,6 +233,12 @@ export class MandelbrotEngine {
     this.targets.swap();
     this.gl.setRenderTarget(null);
   }
+  private zoom(...props: Parameters<RenderCallback>) {
+    const { gl } = props[0];
+    gl.setRenderTarget(null);
+    this.screenPass.zoomRender({ gl, computeResultTexture: this.targets.currentTextures[0] });
+    this.targets.clear(gl, null);
+  }
   private compute(...props: Parameters<RenderCallback>) {
     const { gl } = props[0];
     const { currentTextures, writeTarget } = this.targets;
@@ -237,6 +259,7 @@ export class MandelbrotEngine {
     gl.setRenderTarget(null);
     this.screenPass.render({ gl, computeResultTexture: this.targets.currentTextures[0] });
   }
+
   private iterations = 0;
   private isFullCompute() {
     return this.iterations >= MandelbrotEngine.maxIterations;

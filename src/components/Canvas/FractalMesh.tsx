@@ -54,15 +54,15 @@ export function FractalMesh() {
 
   useEffect(() => {
     mandelbrotEngine.setSize(pWidth, pHeight);
-  }, [pWidth, pHeight, zoom, gl, mandelbrotEngine]);
+  }, [pWidth, pHeight, mandelbrotEngine]);
 
   useEffect(() => {
     mandelbrotEngine.setZoom(zoom);
-  }, [zoom, gl, mandelbrotEngine]);
+  }, [zoom, mandelbrotEngine]);
 
   useEffect(() => {
     mandelbrotEngine.setOffset(offset);
-  }, [offset, gl, mandelbrotEngine]);
+  }, [offset, mandelbrotEngine]);
 
   useEffect(() => {
     mandelbrotEngine.setPalette({
