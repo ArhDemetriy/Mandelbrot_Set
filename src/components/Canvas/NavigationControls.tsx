@@ -10,7 +10,7 @@ export function NavigationControls() {
   const [zoom, setZoom] = useAtom(zoomAtom);
   const moveSpeed = useAtomValue(moveSpeedAtom);
 
-  const { gl, size } = useThree();
+  const { gl, size, invalidate } = useThree();
 
   // Состояние зажатых клавиш для клавиатуры (WASD / Arrow / Q / E)
   const keysPressed = useRef<Record<string, boolean>>({});
@@ -19,9 +19,11 @@ export function NavigationControls() {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       keysPressed.current[e.code] = true;
+      invalidate();
     };
     const handleKeyUp = (e: KeyboardEvent) => {
       keysPressed.current[e.code] = false;
+      invalidate();
     };
 
     window.addEventListener('keydown', handleKeyDown);
@@ -31,7 +33,7 @@ export function NavigationControls() {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
-  }, []);
+  }, [invalidate]);
 
   // Вспомогательная функция для перевода пиксельных координат экрана в UV-пространство Canvas
   const getUvCoords = useCallback(
