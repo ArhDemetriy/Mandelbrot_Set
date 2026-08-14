@@ -21,7 +21,7 @@ uniform vec3 u_palette_d;
 #define INF_ESC -2.0
 #define PREC_ERR -3.0
 #define LIM_FRAME -4.0
-#define LIM_MAX -4.0
+#define LIM_MAX -5.0
 
 // pass type
 #define REGULAR -1
@@ -44,8 +44,11 @@ void main() {
         if(oldUV.x < 0.0 || oldUV.x > 1.0 || oldUV.y < 0.0 || oldUV.y > 1.0) {
             pc_color = vec4(0.0, 0.0, 0.0, 1.0);
         } else {
-            vec2 oldData = texture(u_compute_result, oldUV).xy;
-            float t = getSmoothIter(oldData.y, oldData.x) / 30.0;
+            vec2 data = texture(u_compute_result, oldUV).xy;
+            if(data.y <= 0.0 || data.x <= 0.0) {
+                pc_color = vec4(0.0, 0.0, 0.0, 1.0);
+            }
+            float t = getSmoothIter(data.y, data.x) / 30.0;
             pc_color = vec4(getPaletteColor(t), 1.0);
         }
         return;

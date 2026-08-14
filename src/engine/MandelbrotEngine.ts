@@ -159,16 +159,12 @@ export class MandelbrotEngine {
       return;
     }
 
-    // if (this.screenPass.afterZoomStage()) {
-    //   // на время таймаута экран чёрный, потом рендер работает в обычном режиме
-    //   // this.compute(...props);
-    //   // this.screen(...props);
-    //   this.invalidate();
-    //   return;
-    // }
-
     if (this.screenPass.afterZoomStage()) {
-      // на время зума экран чёрный, после прекращения изменения зума, рендер работает в обычном режиме.
+      if (this.screenPass.existZoomScale()) {
+        const { gl } = props[0];
+        this.screenPass.stopZoom();
+        this.targets.clear(gl, null);
+      }
       this.compute(...props);
       this.screen(...props);
       this.invalidate();
@@ -237,7 +233,6 @@ export class MandelbrotEngine {
     const { gl } = props[0];
     gl.setRenderTarget(null);
     this.screenPass.zoomRender({ gl, computeResultTexture: this.targets.currentTextures[0] });
-    this.targets.clear(gl, null);
   }
   private compute(...props: Parameters<RenderCallback>) {
     const { gl } = props[0];

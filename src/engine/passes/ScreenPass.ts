@@ -78,6 +78,11 @@ export class ScreenPass<TTexture extends Texture = Texture> {
   public existZoomScale() {
     return this.prevZoom !== this.zoom;
   }
+
+  public stopZoom() {
+    this.prevZoom = this.zoom;
+    this.getUniforms().u_pass_type.value = -3;
+  }
   public resetZoom({ zoom }: { zoom?: number } = {}) {
     if (zoom != undefined) this.zoom = zoom;
     this.prevZoom = this.zoom;

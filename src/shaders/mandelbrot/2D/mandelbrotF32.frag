@@ -20,7 +20,7 @@ uniform sampler2D u_prev_state;
 #define INF_ESC -2.0
 #define PREC_ERR -3.0
 #define LIM_FRAME -4.0
-#define LIM_MAX -4.0
+#define LIM_MAX -5.0
 
 void main() {
     ivec2 pixelCoord = ivec2(gl_FragCoord.xy);
