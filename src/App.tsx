@@ -10,7 +10,10 @@ export function App() {
     <main className="relative h-screen w-screen touch-none overflow-hidden bg-black select-none">
       <Canvas
         camera={{ position: [0, 0, 1], fov: 75 }}
-        gl={{ powerPreference: 'high-performance' }}
+        gl={{
+          powerPreference: 'high-performance',
+          preserveDrawingBuffer: true,
+        }}
         frameloop="demand"
         className="touch-none"
       >
