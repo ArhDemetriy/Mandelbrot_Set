@@ -1,151 +1,133 @@
 import { useFrame, useThree } from '@react-three/fiber';
 import { useGesture } from '@use-gesture/react';
-import { useAtom, useAtomValue, useSetAtom } from 'jotai';
-import { useCallback, useEffect, useRef } from 'react';
+import { type ExtractAtomValue, atom, useAtom, useAtomValue, useSetAtom } from 'jotai';
+import { useEffect, useRef } from 'react';
 
 import { moveSpeedAtom, offsetAtom, zoomAtom } from '@/store/fractalStore';
+
+const keysPressedAtom = atom({} as Record<string, { keydownTimestamp: number } | undefined>);
+const addKeyPressedAtom = atom(
+  null,
+  (get, set, key: string, payload: ExtractAtomValue<typeof keysPressedAtom>[string]) => {
+    const currentState = get(keysPressedAtom);
+    set(keysPressedAtom, {
+      ...currentState,
+      [key]: payload,
+    });
+  }
+);
+const delKeyPressedAtom = atom(null, (get, set, key: string) => {
+  const currentState = get(keysPressedAtom);
+  if (key in currentState)
+    set(keysPressedAtom, Object.fromEntries(Object.entries(currentState).filter(({ 0: k }) => k !== key)));
+});
 
 export function NavigationControls() {
   const setOffset = useSetAtom(offsetAtom);
   const [zoom, setZoom] = useAtom(zoomAtom);
   const moveSpeed = useAtomValue(moveSpeedAtom);
 
-  const { gl, size, invalidate } = useThree();
+  const { gl, invalidate } = useThree();
 
-  // Состояние зажатых клавиш для клавиатуры (WASD / Arrow / Q / E)
-  const keysPressed = useRef<Record<string, boolean>>({});
+  const keysPressed = useAtomValue(keysPressedAtom);
+  const addKeyPressed = useSetAtom(addKeyPressedAtom);
+  const delKeyPressed = useSetAtom(delKeyPressedAtom);
 
-  // 1. Слушатели клавиатуры
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      keysPressed.current[e.code] = true;
-      invalidate();
-    };
-    const handleKeyUp = (e: KeyboardEvent) => {
-      keysPressed.current[e.code] = false;
-      invalidate();
-    };
+    const abortController = new AbortController();
 
-    window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('keyup', handleKeyUp);
+    window.addEventListener(
+      'keydown',
+      e => {
+        addKeyPressed(e.code, { keydownTimestamp: performance.now() });
+        invalidate();
+      },
+      { passive: true, signal: abortController.signal }
+    );
+    window.addEventListener(
+      'keyup',
+      e => {
+        delKeyPressed(e.code);
+        invalidate();
+      },
+      { passive: true, signal: abortController.signal }
+    );
 
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('keyup', handleKeyUp);
-    };
-  }, [invalidate]);
+    return () => abortController.abort();
+  }, [addKeyPressed, delKeyPressed, invalidate]);
 
-  // Вспомогательная функция для перевода пиксельных координат экрана в UV-пространство Canvas
-  const getUvCoords = useCallback(
-    (clientX: number, clientY: number) => {
-      const rect = gl.domElement.getBoundingClientRect();
-      const mouseX = ((clientX - rect.left) / rect.width) * 2 - 1;
-      const mouseY = -(((clientY - rect.top) / rect.height) * 2 - 1);
-
-      const aspect = size.width / size.height;
-      return {
-        uvX: (mouseX * aspect) / 2,
-        uvY: mouseY / 2,
-      };
-    },
-    [gl.domElement, size]
-  );
-
-  // 2. Обработка жестов мыши и тач-устройств с помощью @use-gesture/react
   useGesture(
     {
       // --- Панорамирование (Drag: 1 палец / ЛКМ) ---
-      onDrag: ({ delta: [dx, dy], event, touches }) => {
-        // Если на экране больше одного пальца, отдаём приоритет Pinch Zoom
+      onDrag: ({ event, touches }) => {
         if (touches > 1) return;
         event.preventDefault();
-
-        const aspect = size.width / size.height;
-        const moveX = (-dx / size.height) * aspect;
-        const moveY = dy / size.height;
-
-        setOffset(([x, y]) => [x + moveX / zoom, y + moveY / zoom]);
       },
 
       // --- Масштабирование двумя пальцами (Pinch Zoom) ---
-      onPinch: ({ offset, origin: [ox, oy], event, memo }) => {
+      onPinch: ({ event }) => {
         event.preventDefault();
-
-        // При старте жеста запоминаем начальные значения в memo
-        const initial = memo ?? {
-          zoom,
-          offset,
-        };
-
-        const newZoom = Math.max(0.1, initial.zoom * offset[0]);
-        const { uvX, uvY } = getUvCoords(ox, oy);
-
-        // Фиксируем мировые координаты точки под центром пальцев на момент начала жеста
-        const worldX = initial.offset[0] + uvX / initial.zoom;
-        const worldY = initial.offset[1] + uvY / initial.zoom;
-
-        setZoom(newZoom);
-        setOffset([worldX - uvX / newZoom, worldY - uvY / newZoom]);
-
-        return initial; // Возвращаем initial, чтобы сохранить его в memo на весь период жеста
       },
 
       // --- Масштабирование колёсиком мыши (Wheel Zoom) ---
-      onWheel: ({ event, delta: [, dy] }) => {
+      onWheel: ({ event }) => {
         event.preventDefault();
-
-        const wheelEvent = event as WheelEvent;
-        const { uvX, uvY } = getUvCoords(wheelEvent.clientX, wheelEvent.clientY);
-
-        // Множитель зума в зависимости от направления прокрутки
-        const zoomFactor = dy < 0 ? 1.15 : 1 / 1.15;
-
-        setZoom(prevZoom => {
-          const newZoom = Math.max(0.1, prevZoom * zoomFactor);
-
-          setOffset(([cx, cy]) => {
-            const worldX = cx + uvX / prevZoom;
-            const worldY = cy + uvY / prevZoom;
-            return [worldX - uvX / newZoom, worldY - uvY / newZoom];
-          });
-
-          return newZoom;
-        });
       },
     },
     {
-      target: gl.domElement, // Привязываем обработчики непосредственно к DOM-элементу Canvas
-      eventOptions: { passive: false }, // Обязательно для блокировки системной прокрутки/зума браузера
-      drag: {
-        filterTaps: true, // Игнорирует быстрые клики/тапы без движения
-      },
+      target: gl.domElement,
+      eventOptions: { passive: false },
+      drag: { filterTaps: true },
     }
   );
 
-  // 3. Опрос клавиатуры на каждом кадре (Game Loop)
+  const keysPressedRef = useRef(keysPressed);
+  keysPressedRef.current = keysPressed;
   useFrame((_, delta) => {
-    const keys = keysPressed.current;
-    let dx = 0;
-    let dy = 0;
-    let zoomDelta = 0;
+    const now = performance.now();
+    const keys = keysPressedRef.current;
 
-    if (keys['KeyW'] || keys['ArrowUp']) dy += 1;
-    if (keys['KeyS'] || keys['ArrowDown']) dy -= 1;
-    if (keys['KeyA'] || keys['ArrowLeft']) dx -= 1;
-    if (keys['KeyD'] || keys['ArrowRight']) dx += 1;
+    const deltaUp = Math.max(
+      0,
+      Math.min(keys['KeyW']?.keydownTimestamp ?? 0, keys['ArrowUp']?.keydownTimestamp ?? 0) - now
+    );
+    const deltaDown = Math.max(
+      0,
+      Math.min(keys['KeyS']?.keydownTimestamp ?? 0, keys['ArrowDown']?.keydownTimestamp ?? 0) - now
+    );
+    const existDeltaY = Boolean(deltaUp) != Boolean(deltaDown);
 
-    if (keys['KeyE']) zoomDelta += 1;
-    if (keys['KeyQ']) zoomDelta -= 1;
+    const deltaLeft = Math.max(
+      0,
+      Math.min(keys['KeyA']?.keydownTimestamp ?? 0, keys['ArrowLeft']?.keydownTimestamp ?? 0) - now
+    );
+    const deltaRight = Math.max(
+      0,
+      Math.min(keys['KeyD']?.keydownTimestamp ?? 0, keys['ArrowRight']?.keydownTimestamp ?? 0) - now
+    );
+    const existDeltaX = Boolean(deltaLeft) != Boolean(deltaRight);
 
-    if (dx !== 0 || dy !== 0) {
-      const step = (moveSpeed * delta) / zoom;
-      setOffset(([x, y]) => [x + dx * step, y + dy * step]);
+    let dxDirection = 0;
+    let dyDirection = 0;
+
+    if (keys['KeyW'] || keys['ArrowUp']) dyDirection += 1;
+    if (keys['KeyS'] || keys['ArrowDown']) dyDirection -= 1;
+    if (keys['KeyA'] || keys['ArrowLeft']) dxDirection -= 1;
+    if (keys['KeyD'] || keys['ArrowRight']) dxDirection += 1;
+
+    if (dxDirection === 0 && dyDirection === 0) {
+      // зум считаем только если нет offset
+      let zoomDelta = 0;
+      if (keys['KeyE']) zoomDelta += 1;
+      if (keys['KeyQ']) zoomDelta -= 1;
+      if (zoomDelta !== 0) {
+        const zoomSpeed = 1.5;
+        setZoom(prev => Math.max(0.1, prev * Math.exp(zoomDelta * zoomSpeed * delta)));
+      }
     }
 
-    if (zoomDelta !== 0) {
-      const zoomSpeed = 1.5;
-      setZoom(prev => Math.max(0.1, prev * Math.exp(zoomDelta * zoomSpeed * delta)));
-    }
+    const step = (moveSpeed * delta) / zoom;
+    setOffset(([x, y]) => [x + dxDirection * step, y + dyDirection * step]);
   });
 
   return null;
