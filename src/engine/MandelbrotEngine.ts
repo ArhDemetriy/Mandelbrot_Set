@@ -181,6 +181,11 @@ export class MandelbrotEngine {
       this.compute(...props);
       this.screen(...props);
       this.invalidate();
+      return;
+    }
+
+    if (this.screenPass.getNeedAdditionalRender()) {
+      this.screen(...props);
     }
   }
 
