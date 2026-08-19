@@ -5,7 +5,6 @@ import { Button } from '@/components/shadcn_ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/shadcn_ui/card';
 import { Label } from '@/components/shadcn_ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/shadcn_ui/select';
-// import { Slider } from '@/components/shadcn_ui/slider';
 import { type ColorPalette, offsetAtom, paletteAtom, resetViewAtom, zoomAtom } from '@/store/fractalStore';
 
 export function ControlPanel() {
