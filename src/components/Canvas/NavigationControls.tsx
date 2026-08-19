@@ -1,8 +1,8 @@
 import { useFrame, useThree } from '@react-three/fiber';
 import { useGesture } from '@use-gesture/react';
-import { type ExtractAtomValue, atom, useAtom, useAtomValue, useSetAtom } from 'jotai';
+import { type ExtractAtomValue, atom, useSetAtom } from 'jotai';
 import { useAtomCallback } from 'jotai/utils';
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 
 import { moveSpeedAtom, offsetAtom, zoomAtom } from '@/store/fractalStore';
 
@@ -90,8 +90,12 @@ export function NavigationControls() {
   const { gl, invalidate } = useThree();
 
   const setOffset = useSetAtom(offsetAtom);
-  const [zoom, setZoom] = useAtom(zoomAtom);
-  const moveSpeed = useAtomValue(moveSpeedAtom);
+  const getOffset = useAtomCallback(useCallback(get => get(offsetAtom), []));
+
+  const setZoom = useSetAtom(zoomAtom);
+  const getZoom = useAtomCallback(useCallback(get => get(zoomAtom), []));
+
+  const getMoveSpeed = useAtomCallback(useCallback(get => get(moveSpeedAtom), []));
 
   const addKeyPressed = useSetAtom(addKeyPressedAtom);
   const delKeyPressed = useSetAtom(delKeyPressedAtom);
@@ -103,7 +107,7 @@ export function NavigationControls() {
     window.addEventListener(
       'keydown',
       e => {
-        addKeyPressed(e.code, { keydownTimestamp: performance.now() });
+        addKeyPressed(e.code, { keydownTimestamp: Date.now() });
         invalidate();
       },
       { passive: true, signal: abortController.signal }
@@ -120,17 +124,25 @@ export function NavigationControls() {
     return () => abortController.abort();
   }, [addKeyPressed, delKeyPressed, invalidate]);
 
+  const lastPinchTimeRef = useRef(0);
   useGesture(
     {
-      // --- Панорамирование (Drag: 1 палец / ЛКМ) ---
-      onDrag: ({ event, touches }) => {
-        if (touches > 1) return;
+      onDrag: ({ event, touches, offset, tap, last }) => {
+        if (touches > 1) {
+          lastPinchTimeRef.current = Date.now();
+          return;
+        }
+        if (tap || last) return;
+        if (Date.now() - lastPinchTimeRef.current < 150) return;
         event.preventDefault();
+        setOffset(offset);
       },
 
-      // --- Масштабирование двумя пальцами (Pinch Zoom) ---
-      onPinch: ({ event }) => {
+      onPinch: ({ event, offset, last }) => {
+        if (last) return;
         event.preventDefault();
+        setZoom(Math.max(0.1, offset[0]));
+        lastPinchTimeRef.current = Date.now();
       },
 
       // --- Масштабирование колёсиком мыши (Wheel Zoom) ---
@@ -141,12 +153,22 @@ export function NavigationControls() {
     {
       target: gl.domElement,
       eventOptions: { passive: false },
-      drag: { filterTaps: true },
+      drag: {
+        filterTaps: true,
+        from: () => getOffset(),
+        transform: ([px, py]) => {
+          const zoom = getZoom() * 1000;
+          return [-px / zoom, py / zoom];
+        },
+      },
+      pinch: {
+        from: () => [getZoom(), 0],
+      },
     }
   );
 
   useFrame((_, delta) => {
-    const now = performance.now();
+    const now = Date.now();
 
     const { dxDirection, dyDirection, zoomDirection, lastActionTimestamp } = getDeltas();
     const isNoShift = dxDirection === 0 && dyDirection === 0;
@@ -161,7 +183,7 @@ export function NavigationControls() {
       return;
     }
 
-    const step = (moveSpeed * safetyDelta) / zoom;
+    const step = (getMoveSpeed() * safetyDelta) / getZoom();
     setOffset(([x, y]) => [x + dxDirection * step, y + dyDirection * step]);
   });
 
