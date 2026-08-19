@@ -65,6 +65,7 @@ export class ScreenPass<TTexture extends Texture = Texture> {
     uniforms.u_palette_b.value = paletteB;
     uniforms.u_palette_c.value = paletteC;
     uniforms.u_palette_d.value = paletteD;
+    this.needAdditionalRender = true;
   }
 
   public setZoom({ zoom }: { zoom: number }) {
@@ -101,9 +102,15 @@ export class ScreenPass<TTexture extends Texture = Texture> {
     this.resetZoom();
   }
 
+  private needAdditionalRender = false;
+  public getNeedAdditionalRender() {
+    return this.needAdditionalRender;
+  }
+
   public render({ gl, computeResultTexture }: { gl: WebGLRenderer; computeResultTexture: TTexture }) {
     this.getUniforms().u_compute_result.value = computeResultTexture;
     this.quadRender({ gl, material: this.material });
+    this.needAdditionalRender = false;
   }
   public zoomRender({ gl, computeResultTexture }: { gl: WebGLRenderer; computeResultTexture: TTexture }) {
     clearTimeout(this.afterZoomTimeoutId);
@@ -120,6 +127,8 @@ export class ScreenPass<TTexture extends Texture = Texture> {
     uniforms.u_pass_type.value = -3;
 
     this.afterZoomTimeoutId = setTimeout(() => this.resetZoom(), 1000);
+
+    this.needAdditionalRender = true;
   }
   private afterZoomTimeoutId: ReturnType<typeof setTimeout> | undefined;
 
