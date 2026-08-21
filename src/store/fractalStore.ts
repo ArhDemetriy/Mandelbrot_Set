@@ -1,5 +1,7 @@
-import { atom } from 'jotai';
+import { atom, type ExtractAtomValue } from 'jotai';
+import { atomWithDefault } from 'jotai/utils';
 import { Vector3 } from 'three';
+import { debounce } from 'lodash-es';
 
 export type ColorPalette = 'classic' | 'fire' | 'electric' | 'psychedelic' | 'monochrome';
 
@@ -17,10 +19,47 @@ const DEFAULT_STATE: {
   moveSpeed: 1.0,
 };
 
-/** Координаты центра экрана в комплексной плоскости */
-export const offsetAtom = atom(DEFAULT_STATE.offset);
-/** Масштаб (чем больше значение, тем сильнее приближение) */
-export const zoomAtom = atom(DEFAULT_STATE.zoom);
+export const {
+  /** Координаты центра экрана в комплексной плоскости */
+  offsetAtom,
+  /** Масштаб (чем больше значение, тем сильнее приближение) */
+  zoomAtom,
+} = (() => {
+  const getInitialUrlParams = () => {
+    if (typeof window === 'undefined') return null;
+    const params = new URLSearchParams(window.location.search);
+    const x = parseFloat(params.get('x') ?? '');
+    const y = parseFloat(params.get('y') ?? '');
+    const z = parseFloat(params.get('z') ?? '');
+
+    return {
+      offset: !isNaN(x) && !isNaN(y) ? ([x, y] as [number, number]) : null,
+      zoom: !isNaN(z) && z > 0 ? z : null,
+    };
+  };
+  const initialParams = getInitialUrlParams();
+
+  return {
+    offsetAtom: atomWithDefault(() => initialParams?.offset ?? DEFAULT_STATE.offset),
+    zoomAtom: atomWithDefault(() => initialParams?.zoom ?? DEFAULT_STATE.zoom),
+  };
+})();
+
+const debouncedUpdateUrl = debounce(() => {
+  offsetAtom;
+  zoomAtom;
+}, 150);
+
+export const setZoomAtom = atom(null, (_get, set, zoom: ExtractAtomValue<typeof zoomAtom>) => {
+  set(zoomAtom, zoom);
+  debouncedUpdateUrl();
+});
+
+export const setOffsetAtom = atom(null, (_get, set, offset: ExtractAtomValue<typeof offsetAtom>) => {
+  set(offsetAtom, offset);
+  debouncedUpdateUrl();
+});
+
 /** Максимальное количество итераций (точность/детализация) */
 export const maxIterationsAtom = atom(DEFAULT_STATE.maxIterations);
 /** Текущая цветовая схема */
