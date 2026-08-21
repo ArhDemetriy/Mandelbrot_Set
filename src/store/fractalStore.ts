@@ -32,7 +32,9 @@ export const moveSpeedAtom = atom(DEFAULT_STATE.moveSpeed);
 export const resetViewAtom = atom(null, (_get, set) => {
   set(offsetAtom, DEFAULT_STATE.offset);
   set(zoomAtom, DEFAULT_STATE.zoom);
+  set(resetEventAtom, prev => prev + 1);
 });
+export const resetEventAtom = atom(0);
 
 const TWO_PI = 2.0 * Math.PI;
 export const paletteMapAtom = atom(get => {

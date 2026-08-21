@@ -27,3 +27,21 @@ export function App() {
     </main>
   );
 }
+
+(() => {
+  const media = window.matchMedia('(prefers-color-scheme: dark)');
+  if (media.matches) {
+    document.documentElement.classList.add('dark');
+  } else {
+    document.documentElement.classList.remove('dark');
+  }
+
+  media.addEventListener('change', e => {
+    const newIsDark = e.matches;
+    if (newIsDark) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  });
+})();
