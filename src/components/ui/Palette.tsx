@@ -1,18 +1,19 @@
-import { useAtom, useSetAtom } from 'jotai';
-import { ChevronDown, ChevronUp, RotateCcw, Sparkles, Sun } from 'lucide-react';
+import { useAtomValue, useSetAtom } from 'jotai';
+import { ChevronDown, ChevronUp, Contrast, RotateCcw, Sparkles, Sun } from 'lucide-react';
 
 import { Button } from '@/components/shadcn_ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/shadcn_ui/card';
 import { Slider } from '@/components/shadcn_ui/slider';
 import { resetViewAtom } from '@/store/fractalStore';
 import { paletteAtom, setPresetPalette } from '@/store/paletteStore';
-import type { ReactNode } from 'react';
+import { useCallback, type ReactNode } from 'react';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/shadcn_ui/dropdown-menu';
+import { useAtomCallback } from 'jotai/utils';
 
 function PaletteControl({ title, value, children }: { title: ReactNode; value: ReactNode; children: ReactNode }) {
   return (
@@ -25,17 +26,22 @@ function PaletteControl({ title, value, children }: { title: ReactNode; value: R
 }
 
 export function Palette({ close }: { close: () => void }) {
-  const [palette, setPalette] = useAtom(paletteAtom);
   const resetView = useSetAtom(resetViewAtom);
+  const palette = useAtomValue(paletteAtom);
 
-  const handleVectorAChange = (ort: 'x' | 'y' | 'z', val: number) => {
-    const nextA = palette.a.clone();
-    nextA[ort] = val;
-    setPalette(prev => ({
-      ...prev,
-      a: nextA,
-    }));
-  };
+  const handleVectorChange = useAtomCallback(
+    useCallback((get, set, vector: 'a' | 'b' | 'c' | 'd', ort: 'x' | 'y' | 'z', value: number) => {
+      const prevPalette = get(paletteAtom);
+
+      const nextVector = prevPalette[vector].clone();
+      nextVector[ort] = value;
+
+      set(paletteAtom, {
+        ...prevPalette,
+        [vector]: nextVector,
+      });
+    }, [])
+  );
 
   return (
     <Card className="w-80 animate-in border-border/50 bg-background/60 shadow-2xl backdrop-blur-xl transition-all duration-300 zoom-in-95 fade-in">
@@ -54,7 +60,8 @@ export function Palette({ close }: { close: () => void }) {
       </CardHeader>
 
       <CardContent className="h-max max-h-[80vh] snap-y snap-mandatory scrollbar-thin scrollbar-thumb-muted-foreground/20 space-y-6 overflow-y-auto pr-2 text-sm">
-        <section className="3 h-max snap-start snap-always rounded-lg border border-border/40 bg-background/40 p-3.5 backdrop-blur-md">
+        {/* Быстрые пресеты */}
+        <section className="h-max snap-start snap-always rounded-lg border border-border/40 bg-background/40 p-3.5 backdrop-blur-md">
           <div className="flex items-center gap-1.5 text-xs font-medium text-foreground">
             <Sparkles className="h-3.5 w-3.5 text-amber-500" />
             <h3>Быстрые пресеты</h3>
@@ -86,9 +93,7 @@ export function Palette({ close }: { close: () => void }) {
             Базовый яркостный сдвиг палитры для каждого цветового канала.
           </p>
 
-          {/* Контейнер для 3 вертикальных слайдеров */}
           <div className="flex w-full items-center justify-between gap-5 pt-1">
-            {/* Red Channel */}
             <PaletteControl title={<h4 className="text-red-400">Red (A.x)</h4>} value={palette.a.x.toFixed(2)}>
               <Slider
                 orientation="vertical"
@@ -96,11 +101,10 @@ export function Palette({ close }: { close: () => void }) {
                 min={0}
                 max={1}
                 step={0.01}
-                onValueChange={val => handleVectorAChange('x', Array.isArray(val) ? val[0] : val)}
+                onValueChange={val => handleVectorChange('a', 'x', Array.isArray(val) ? val[0] : val)}
               />
             </PaletteControl>
 
-            {/* Green Channel */}
             <PaletteControl title={<h4 className="text-green-400">Green (A.y)</h4>} value={palette.a.y.toFixed(2)}>
               <Slider
                 orientation="vertical"
@@ -108,11 +112,10 @@ export function Palette({ close }: { close: () => void }) {
                 min={0}
                 max={1}
                 step={0.01}
-                onValueChange={val => handleVectorAChange('y', Array.isArray(val) ? val[0] : val)}
+                onValueChange={val => handleVectorChange('a', 'y', Array.isArray(val) ? val[0] : val)}
               />
             </PaletteControl>
 
-            {/* Blue Channel */}
             <PaletteControl title={<h4 className="text-blue-400">Blue (A.z)</h4>} value={palette.a.z.toFixed(2)}>
               <Slider
                 orientation="vertical"
@@ -120,7 +123,54 @@ export function Palette({ close }: { close: () => void }) {
                 min={0}
                 max={1}
                 step={0.01}
-                onValueChange={val => handleVectorAChange('z', Array.isArray(val) ? val[0] : val)}
+                onValueChange={val => handleVectorChange('a', 'z', Array.isArray(val) ? val[0] : val)}
+              />
+            </PaletteControl>
+          </div>
+        </section>
+
+        {/* Блок 2: Вектор B (Контраст / Амплитуда) */}
+        <section className="h-max snap-start snap-always space-y-4 rounded-lg border border-border/40 bg-background/40 p-3.5 backdrop-blur-md">
+          <div className="flex items-center gap-1.5 text-xs font-medium text-foreground">
+            <Contrast className="h-3.5 w-3.5 text-indigo-400" />
+            <h3>Контраст (Вектор B)</h3>
+          </div>
+
+          <p className="text-[11px] leading-snug text-muted-foreground">
+            Амплитуда размаха цвета относительно базовой яркости.
+          </p>
+
+          <div className="flex w-full items-center justify-between gap-5 pt-1">
+            <PaletteControl title={<h4 className="text-red-400">Red (B.x)</h4>} value={palette.b.x.toFixed(2)}>
+              <Slider
+                orientation="vertical"
+                value={[palette.b.x]}
+                min={0}
+                max={1}
+                step={0.01}
+                onValueChange={val => handleVectorChange('b', 'x', Array.isArray(val) ? val[0] : val)}
+              />
+            </PaletteControl>
+
+            <PaletteControl title={<h4 className="text-green-400">Green (B.y)</h4>} value={palette.b.y.toFixed(2)}>
+              <Slider
+                orientation="vertical"
+                value={[palette.b.y]}
+                min={0}
+                max={1}
+                step={0.01}
+                onValueChange={val => handleVectorChange('b', 'y', Array.isArray(val) ? val[0] : val)}
+              />
+            </PaletteControl>
+
+            <PaletteControl title={<h4 className="text-blue-400">Blue (B.z)</h4>} value={palette.b.z.toFixed(2)}>
+              <Slider
+                orientation="vertical"
+                value={[palette.b.z]}
+                min={0}
+                max={1}
+                step={0.01}
+                onValueChange={val => handleVectorChange('b', 'z', Array.isArray(val) ? val[0] : val)}
               />
             </PaletteControl>
           </div>
