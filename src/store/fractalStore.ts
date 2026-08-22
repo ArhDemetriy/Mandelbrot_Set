@@ -54,8 +54,10 @@ const debouncedUpdateUrl = debounce(() => {
   const offset = store.get(offsetAtom);
   params.set('x', offset[0].toPrecision(16));
   params.set('y', offset[1].toPrecision(16));
-  const zoom = store.get(zoomAtom);
-  params.set('z', zoom.toExponential(8));
+
+  const z = store.get(zoomAtom);
+  const zoom = z < 1e6 ? Number(z.toPrecision(8)).toString() : z.toExponential(8).replace('e+', 'e');
+  params.set('z', zoom);
 
   const url = new URL(window.location.toString());
   url.search = params.toString();
