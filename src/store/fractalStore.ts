@@ -1,4 +1,4 @@
-import { atom, type ExtractAtomValue } from 'jotai';
+import { atom, type ExtractAtomValue, getDefaultStore } from 'jotai';
 import { atomWithDefault } from 'jotai/utils';
 import { Vector3 } from 'three';
 import { debounce } from 'lodash-es';
@@ -18,6 +18,8 @@ const DEFAULT_STATE: {
   palette: 'classic',
   moveSpeed: 1.0,
 };
+
+const store = getDefaultStore();
 
 export const {
   /** Координаты центра экрана в комплексной плоскости */
@@ -46,18 +48,28 @@ export const {
 })();
 
 const debouncedUpdateUrl = debounce(() => {
-  offsetAtom;
-  zoomAtom;
+  if (typeof window === 'undefined') return null;
+  const params = new URLSearchParams(window.location.search);
+
+  const offset = store.get(offsetAtom);
+  params.set('x', offset[0].toPrecision(16));
+  params.set('y', offset[1].toPrecision(16));
+  const zoom = store.get(zoomAtom);
+  params.set('z', zoom.toExponential(8));
+
+  const url = new URL(window.location.toString());
+  url.search = params.toString();
+  window.history.replaceState(null, '', url);
 }, 150);
+store.sub(zoomAtom, debouncedUpdateUrl);
+store.sub(offsetAtom, debouncedUpdateUrl);
 
 export const setZoomAtom = atom(null, (_get, set, zoom: ExtractAtomValue<typeof zoomAtom>) => {
   set(zoomAtom, zoom);
-  debouncedUpdateUrl();
 });
 
 export const setOffsetAtom = atom(null, (_get, set, offset: ExtractAtomValue<typeof offsetAtom>) => {
   set(offsetAtom, offset);
-  debouncedUpdateUrl();
 });
 
 /** Максимальное количество итераций (точность/детализация) */
