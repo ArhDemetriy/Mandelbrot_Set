@@ -60,7 +60,7 @@ void main() {
     float status = data.z;
 
     if(status == INF_ESC) {
-        float t = getSmoothIter(data.y, data.x) / 30.0;
+        float t = getSmoothIter(data.y, data.x);
         pc_color = vec4(getPaletteColor(t), 1.0);
         return;
     }

@@ -179,35 +179,35 @@ export function Palette({ close }: { close: () => void }) {
           </p>
 
           <div className="flex w-full items-center justify-between gap-5 pt-1">
-            <PaletteControl title={<h4 className="text-red-400">Red (C.x)</h4>} value={palette.c.x.toFixed(2)}>
+            <PaletteControl title={<h4 className="text-red-400">Red (C.x)</h4>} value={palette.c.x.toFixed(3)}>
               <Slider
                 orientation="vertical"
                 value={[palette.c.x]}
                 min={0}
-                max={5}
-                step={0.05}
+                max={0.15}
+                step={0.001}
                 onValueChange={val => handleVectorChange('c', 'x', Array.isArray(val) ? val[0] : val)}
               />
             </PaletteControl>
 
-            <PaletteControl title={<h4 className="text-green-400">Green (C.y)</h4>} value={palette.c.y.toFixed(2)}>
+            <PaletteControl title={<h4 className="text-green-400">Green (C.y)</h4>} value={palette.c.y.toFixed(3)}>
               <Slider
                 orientation="vertical"
                 value={[palette.c.y]}
                 min={0}
-                max={5}
-                step={0.05}
+                max={0.15}
+                step={0.001}
                 onValueChange={val => handleVectorChange('c', 'y', Array.isArray(val) ? val[0] : val)}
               />
             </PaletteControl>
 
-            <PaletteControl title={<h4 className="text-blue-400">Blue (C.z)</h4>} value={palette.c.z.toFixed(2)}>
+            <PaletteControl title={<h4 className="text-blue-400">Blue (C.z)</h4>} value={palette.c.z.toFixed(3)}>
               <Slider
                 orientation="vertical"
                 value={[palette.c.z]}
                 min={0}
-                max={5}
-                step={0.05}
+                max={0.15}
+                step={0.001}
                 onValueChange={val => handleVectorChange('c', 'z', Array.isArray(val) ? val[0] : val)}
               />
             </PaletteControl>
