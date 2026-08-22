@@ -4,7 +4,7 @@ import {
   ShaderMaterial,
   type ShaderMaterialProperties,
   Vector2,
-  Vector3,
+  Vector4,
   type WebGLRenderer,
 } from 'three';
 
@@ -68,11 +68,11 @@ export class ComputePass64 {
   }
 
   public setOffset(offset: [number, number]) {
-    this.getUniforms().u_offset.value.set(offset[0], offset[1]);
+    this.getUniforms().u_offset.value.set(offset[0], offset[1], 0, 0);
   }
 
   public setScale({ zoom, width, height }: { zoom: number; height: number; width: number }) {
-    this.getUniforms().u_view.value.set(1 / (zoom * height), width / 2, height / 2);
+    this.getUniforms().u_view.value.set(1 / (zoom * height), 0, width / 2, height / 2);
   }
 
   public dispose() {
@@ -111,11 +111,11 @@ export class ComputePass64 {
       },
       u_offset: {
         /** ...offset */
-        value: new Vector2(offset[0], offset[1]),
+        value: new Vector4(offset[0], offset[1], 0, 0),
       },
       u_view: {
         /** 1/(zoom*height), width/2, height/2  */
-        value: new Vector3(1 / (zoom * height), width / 2, height / 2),
+        value: new Vector4(1 / (zoom * height), 0, width / 2, height / 2),
       },
       u_prev_result: { value: result },
       u_prev_state1: { value: state1 },

@@ -9,10 +9,10 @@ layout(location = 2) out vec4 pc_state2;
 
 /** ITERATION_ON_FRAME, MAX_ITERATIONS */
 uniform vec2 u_const;
-/** 1/(zoom*height), width/2, height/2  */
-uniform vec3 u_view;
-/** ...offset */
-uniform vec2 u_offset;
+/** 1/(zoom*height) hi, 1/(zoom*height) lo, width/2, height/2  */
+uniform vec4 u_view;
+/** offset_hi, offset_lo */
+uniform vec4 u_offset;
 /** iteration, dot, status, NEVER */
 uniform sampler2D u_prev_result;
 /** z_hi, iz_hi, dz_hi, diz_hi */
@@ -93,11 +93,11 @@ void main() {
     vec2 dz_y = prevIterations <= 0 ? vec2(0.0) : vec2(prevState1.w, prevState2.w);
 
     // Экранные координаты и u_offset в DS формат
-    vec2 coord = gl_FragCoord.xy - u_view.yz;
-    vec2 screenCoord_x = ds_mul(vec2(coord.x, 0.0), vec2(u_view.x, 0.0));
-    vec2 screenCoord_y = ds_mul(vec2(coord.y, 0.0), vec2(u_view.x, 0.0));
-    vec2 c_x = ds_add(screenCoord_x, vec2(u_offset.x, 0.0));
-    vec2 c_y = ds_add(screenCoord_y, vec2(u_offset.y, 0.0));
+    vec2 coord = gl_FragCoord.xy - u_view.zw;
+    vec2 screenCoord_x = ds_mul(vec2(coord.x, 0.0), u_view.xy);
+    vec2 screenCoord_y = ds_mul(vec2(coord.y, 0.0), u_view.xy);
+    vec2 c_x = ds_add(screenCoord_x, vec2(u_offset.x, u_offset.z));
+    vec2 c_y = ds_add(screenCoord_y, vec2(u_offset.y, u_offset.w));
 
     vec2 checkZ_x = z_x;
     vec2 checkZ_y = z_y;

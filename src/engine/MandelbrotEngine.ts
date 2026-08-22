@@ -147,7 +147,7 @@ export class MandelbrotEngine {
   private currentWidth: number;
   private currentZoom: number;
   private isF64Zoom() {
-    return this.currentZoom > 10;
+    return true;
     // return false;
   }
 
