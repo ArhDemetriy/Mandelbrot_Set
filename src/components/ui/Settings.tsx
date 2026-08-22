@@ -20,12 +20,12 @@ export function Settings({ close }: { close: () => void }) {
   const precision = Math.min(12, Math.max(6, Math.floor(Math.log10(zoom)) + 6));
 
   return (
-    <Card className="w-80 animate-in border-border bg-background/85 shadow-2xl backdrop-blur-md transition-all duration-300 zoom-in-95 fade-in">
+    <Card className="w-80 animate-in border-border/50 bg-background/60 shadow-2xl backdrop-blur-xl transition-all duration-300 zoom-in-95 fade-in">
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center justify-between text-base font-semibold">
           <span className="flex items-center gap-2">Фрактал Мандельброта</span>
           <div className="flex items-center gap-1">
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={resetView} title="Сбросить вид">
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={resetView} title="Сбросить позицию">
               <RotateCcw className="h-4 w-4" />
             </Button>
             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={close} title="Свернуть панель">
@@ -36,25 +36,8 @@ export function Settings({ close }: { close: () => void }) {
       </CardHeader>
 
       <CardContent className="space-y-5 text-sm">
-        {/* Цветовая палитра */}
-        <div className="space-y-2">
-          <Label className="text-xs text-muted-foreground">Пресет палитры</Label>
-          <Select value={null as null | ColorPalette} onValueChange={val => val && setPresetPalette(val)}>
-            <SelectTrigger className="h-9 w-full">
-              <SelectValue placeholder="Выберите палитру" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={'electric' satisfies ColorPalette}>Electric Blue</SelectItem>
-              <SelectItem value={'fire' satisfies ColorPalette}>Fire & Magma</SelectItem>
-              <SelectItem value={'classic' satisfies ColorPalette}>Classic Smooth</SelectItem>
-              <SelectItem value={'psychedelic' satisfies ColorPalette}>Psychedelic</SelectItem>
-              <SelectItem value={'monochrome' satisfies ColorPalette}>Monochrome</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
         {/* Текущие координаты и Zoom */}
-        <div className="space-y-1.5 border-t border-border/60 pt-2 font-mono text-[11px] text-muted-foreground">
+        <section className="h-max snap-start snap-always space-y-4 rounded-lg border border-border/40 bg-background/40 p-3.5 backdrop-blur-md">
           <div className="mb-1 flex items-center justify-between">
             <Button
               variant="ghost"
@@ -92,7 +75,7 @@ export function Settings({ close }: { close: () => void }) {
             <span>Zoom:</span>
             <span className="text-foreground">{zoom.toExponential(2)}</span>
           </div>
-        </div>
+        </section>
       </CardContent>
     </Card>
   );

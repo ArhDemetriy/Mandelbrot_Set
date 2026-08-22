@@ -3,19 +3,15 @@ import { atomWithDefault } from 'jotai/utils';
 import { debounce } from 'lodash-es';
 import { getStore } from './getStore';
 
-export type ColorPalette = 'classic' | 'fire' | 'electric' | 'psychedelic' | 'monochrome' | 'custom';
-
 const DEFAULT_STATE: {
   offset: [number, number];
   zoom: number;
   maxIterations: number;
-  palette: ColorPalette;
   moveSpeed: number;
 } = {
   offset: [-0.75, -0.0],
   zoom: 1.0,
   maxIterations: 20,
-  palette: 'classic',
   moveSpeed: 1.0,
 };
 
