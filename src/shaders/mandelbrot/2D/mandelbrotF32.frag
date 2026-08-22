@@ -49,16 +49,16 @@ void main() {
 
     int iterationOnFrame = int(u_const.x);
     for(int i = 0; i < iterationOnFrame; i++) {
-        vec2 v0 = z * z;
-        if((v0.x + v0.y) > 4.0) {
-            pc_result = vec4(float(prevIterations + i), (v0.x + v0.y), INF_ESC, NEVER);
+        vec2 z2 = z * z;
+        if((z2.x + z2.y) > 4.0) {
+            pc_result = vec4(float(prevIterations + i), (z2.x + z2.y), INF_ESC, NEVER);
             pc_state = vec4(z, dz);
             return;
         }
 
-        z = vec2((v0.x - v0.y), 2.0 * z.x * z.y) + c;
+        z = vec2((z2.x - z2.y), 2.0 * z.x * z.y) + c;
         if(z == checkZ) {
-            pc_result = vec4(float(prevIterations + i), (v0.x + v0.y), PREC_ERR, NEVER);
+            pc_result = vec4(float(prevIterations + i), (z2.x + z2.y), PREC_ERR, NEVER);
             pc_state = vec4(z, dz);
             return;
         }
@@ -73,6 +73,7 @@ void main() {
 
     float currentIteration = float(prevIterations + iterationOnFrame);
     bool outOfMaxIterations = currentIteration >= u_const.y;
+
     pc_result = vec4(currentIteration, dot(z, z), outOfMaxIterations ? LIM_MAX : LIM_FRAME, NEVER);
     pc_state = vec4(z, dz);
 }
