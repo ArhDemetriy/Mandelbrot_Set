@@ -292,6 +292,10 @@ export class MandelbrotEngine {
   }
   private gl: WebGLRenderer;
 
+  public forceReset() {
+    this.targets.clear(this.gl);
+  }
+
   private static getRenderTargetOptions() {
     return {
       count: 2,

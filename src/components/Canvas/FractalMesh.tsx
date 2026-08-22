@@ -3,7 +3,7 @@ import { useAtomValue } from 'jotai';
 import { useEffect, useMemo, useState } from 'react';
 
 import { MandelbrotEngine } from '@/engine/MandelbrotEngine';
-import { offsetAtom, paletteMapAtom, zoomAtom } from '@/store/fractalStore';
+import { offsetAtom, paletteMapAtom, resetEventAtom, zoomAtom } from '@/store/fractalStore';
 
 export function FractalMesh() {
   const { gl, size, invalidate } = useThree();
@@ -19,6 +19,7 @@ export function FractalMesh() {
   const offset = useAtomValue(offsetAtom);
   const zoom = useAtomValue(zoomAtom);
   const paletteMap = useAtomValue(paletteMapAtom);
+  const resetEvent = useAtomValue(resetEventAtom);
 
   const { 0: mandelbrotEngine } = useState(
     () =>
@@ -39,6 +40,10 @@ export function FractalMesh() {
   );
 
   useEffect(() => () => mandelbrotEngine?.dispose(), [mandelbrotEngine]);
+
+  useEffect(() => {
+    mandelbrotEngine.forceReset();
+  }, [resetEvent, mandelbrotEngine]);
 
   useEffect(() => {
     gl.autoClear = false;
