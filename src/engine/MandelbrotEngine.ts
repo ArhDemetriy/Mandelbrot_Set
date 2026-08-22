@@ -15,11 +15,13 @@ import { QuadRenderer } from './passes/QuadRenderer';
 import { ScreenPass } from './passes/ScreenPass';
 import { ShiftPass } from './passes/ShiftPass';
 import { getShiftDirtyRects } from './utils';
+import { ComputePass64 } from './passes/ComputePass64';
 
 export class MandelbrotEngine {
   private readonly quadRenderer = new QuadRenderer<ShaderMaterial>();
   private readonly shiftPass: ShiftPass<DataTexture>;
   private readonly computePass: ComputePass;
+  private readonly computePass64: ComputePass64;
 
   private readonly screenPass: ScreenPass<DataTexture>;
   private readonly targets: GPUResourceManager;
@@ -81,6 +83,19 @@ export class MandelbrotEngine {
       offset,
     });
 
+    this.computePass64 = new ComputePass64({
+      render,
+      result: currentTextures[0],
+      state1: currentTextures[1],
+      state2: currentTextures[2],
+      width,
+      height,
+      iterationsPerFrame: MandelbrotEngine.iterationsPerFrame,
+      maxIterations: MandelbrotEngine.maxIterations,
+      zoom,
+      offset,
+    });
+
     this.screenPass = new ScreenPass({
       render,
       result: currentTextures[0],
@@ -108,6 +123,7 @@ export class MandelbrotEngine {
 
     this.targets.resize(width, height);
     this.computePass.setScale({ zoom: this.currentZoom, width, height });
+    this.computePass64.setScale({ zoom: this.currentZoom, width, height });
     this.shiftPass.resetShift();
     this.shiftPass.setSize(width, height);
     this.screenPass.setSize({ width, height });
@@ -121,6 +137,7 @@ export class MandelbrotEngine {
     this.currentZoom = zoom;
 
     this.computePass.setScale({ zoom, width: this.currentWidth, height: this.currentHeight });
+    this.computePass64.setScale({ zoom, width: this.currentWidth, height: this.currentHeight });
     this.screenPass.setZoom({ zoom });
 
     this.resetCompute();
@@ -129,12 +146,17 @@ export class MandelbrotEngine {
   private currentHeight: number;
   private currentWidth: number;
   private currentZoom: number;
+  private isF64Zoom() {
+    return true;
+    // return false;
+  }
 
   public setOffset(offset: [number, number]) {
     const { 0: prevOffsetX, 1: prevOffsetY } = this.currentOffset;
     const { 0: currentOffsetX, 1: currentOffsetY } = (this.currentOffset = offset);
 
     this.computePass.setOffset(offset);
+    this.computePass64.setOffset(offset);
 
     const scale = this.currentHeight * this.currentZoom;
     this.shiftPass.incShift({
@@ -244,11 +266,22 @@ export class MandelbrotEngine {
     const { currentTextures, writeTarget } = this.targets;
 
     gl.setRenderTarget(writeTarget);
-    this.computePass.render({
-      gl,
-      result: currentTextures[0],
-      state: currentTextures[1],
-    });
+
+    if (this.isF64Zoom()) {
+      this.computePass64.render({
+        gl,
+        result: currentTextures[0],
+        state1: currentTextures[1],
+        state2: currentTextures[2],
+      });
+    } else {
+      this.computePass.render({
+        gl,
+        result: currentTextures[0],
+        state: currentTextures[1],
+      });
+    }
+
     gl.setRenderTarget(null);
 
     this.targets.swap();
@@ -282,6 +315,7 @@ export class MandelbrotEngine {
   public dispose() {
     this.screenPass.dispose();
     this.computePass.dispose();
+    this.computePass64.dispose();
     this.shiftPass.dispose();
     this.quadRenderer.dispose();
     this.targets.dispose();
@@ -298,7 +332,7 @@ export class MandelbrotEngine {
 
   private static getRenderTargetOptions() {
     return {
-      count: 2,
+      count: 3,
       minFilter: NearestFilter,
       magFilter: NearestFilter,
       type: FloatType,

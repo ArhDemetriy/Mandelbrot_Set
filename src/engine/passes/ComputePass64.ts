@@ -4,16 +4,16 @@ import {
   ShaderMaterial,
   type ShaderMaterialProperties,
   Vector2,
-  Vector3,
+  Vector4,
   type WebGLRenderer,
 } from 'three';
 
-import f32Shader from '@/shaders/mandelbrot/2D/mandelbrotF32.frag?raw';
+import f64Shader from '@/shaders/mandelbrot/2D/mandelbrotF64.frag?raw';
 import vertexShader from '@/shaders/mandelbrot/mandelbrot.vert?raw';
 
 import type { ScissorBox } from '../utils';
 
-export class ComputePass {
+export class ComputePass64 {
   private readonly material: ShaderMaterial;
   private readonly quadRender: (props: {
     gl: WebGLRenderer;
@@ -33,42 +33,46 @@ export class ComputePass {
     maxIterations: number;
     offset: [number, number];
     result: DataTexture;
-    state: DataTexture;
+    state1: DataTexture;
+    state2: DataTexture;
   }) {
     this.quadRender = render;
 
     this.material = new ShaderMaterial({
       glslVersion: GLSL3,
-      fragmentShader: f32Shader,
+      fragmentShader: f64Shader,
       vertexShader,
-      uniforms: ComputePass.makeInitComputeUniforms(initUniforms),
+      uniforms: ComputePass64.makeInitComputeUniforms(initUniforms),
     });
   }
 
   public render({
     gl,
     result,
-    state,
+    state1,
+    state2,
     scissors,
   }: {
     gl: WebGLRenderer;
     result: DataTexture;
-    state: DataTexture;
+    state1: DataTexture;
+    state2: DataTexture;
     scissors?: ScissorBox[];
   }) {
     const uniforms = this.getUniforms();
     uniforms.u_prev_result.value = result;
-    uniforms.u_prev_state.value = state;
+    uniforms.u_prev_state1.value = state1;
+    uniforms.u_prev_state2.value = state2;
 
     this.quadRender({ gl, material: this.material, scissors });
   }
 
   public setOffset(offset: [number, number]) {
-    this.getUniforms().u_offset.value.set(offset[0], offset[1]);
+    this.getUniforms().u_offset.value.set(offset[0], offset[1], 0, 0);
   }
 
   public setScale({ zoom, width, height }: { zoom: number; height: number; width: number }) {
-    this.getUniforms().u_view.value.set(1 / (zoom * height), width / 2, height / 2);
+    this.getUniforms().u_view.value.set(1 / (zoom * height), 0, width / 2, height / 2);
   }
 
   public dispose() {
@@ -76,7 +80,7 @@ export class ComputePass {
   }
 
   private getUniforms() {
-    return this.material.uniforms as ReturnType<(typeof ComputePass)['makeInitComputeUniforms']>;
+    return this.material.uniforms as ReturnType<(typeof ComputePass64)['makeInitComputeUniforms']>;
   }
 
   private static makeInitComputeUniforms({
@@ -87,7 +91,8 @@ export class ComputePass {
     maxIterations,
     offset,
     result,
-    state,
+    state1,
+    state2,
   }: {
     zoom: number;
     height: number;
@@ -96,7 +101,8 @@ export class ComputePass {
     maxIterations: number;
     offset: [number, number];
     result: DataTexture;
-    state: DataTexture;
+    state1: DataTexture;
+    state2: DataTexture;
   }) {
     return {
       u_const: {
@@ -105,14 +111,15 @@ export class ComputePass {
       },
       u_offset: {
         /** ...offset */
-        value: new Vector2(offset[0], offset[1]),
+        value: new Vector4(offset[0], offset[1], 0, 0),
       },
       u_view: {
         /** 1/(zoom*height), width/2, height/2  */
-        value: new Vector3(1 / (zoom * height), width / 2, height / 2),
+        value: new Vector4(1 / (zoom * height), 0, width / 2, height / 2),
       },
       u_prev_result: { value: result },
-      u_prev_state: { value: state },
+      u_prev_state1: { value: state1 },
+      u_prev_state2: { value: state2 },
     } satisfies ShaderMaterialProperties['uniforms'];
   }
 }

@@ -30,7 +30,7 @@ export class GPUResourceManager {
     this._config = {
       width: options.width,
       height: options.height,
-      count: options.count ?? 2,
+      count: options.count ?? 3,
       type: options.type ?? FloatType,
       minFilter: options.minFilter ?? NearestFilter,
       magFilter: options.magFilter ?? NearestFilter,
