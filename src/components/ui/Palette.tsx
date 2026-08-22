@@ -1,13 +1,18 @@
 import { useAtom, useSetAtom } from 'jotai';
-import { ChevronUp, RotateCcw, Sun } from 'lucide-react';
+import { ChevronDown, ChevronUp, RotateCcw, Sparkles, Sun } from 'lucide-react';
 
 import { Button } from '@/components/shadcn_ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/shadcn_ui/card';
 import { Slider } from '@/components/shadcn_ui/slider';
 import { resetViewAtom } from '@/store/fractalStore';
-import { paletteAtom, setPresetPalette, type ColorPalette } from '@/store/paletteStore';
+import { paletteAtom, setPresetPalette } from '@/store/paletteStore';
 import type { ReactNode } from 'react';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/shadcn_ui/select';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/shadcn_ui/dropdown-menu';
 
 function PaletteControl({ title, value, children }: { title: ReactNode; value: ReactNode; children: ReactNode }) {
   return (
@@ -23,12 +28,9 @@ export function Palette({ close }: { close: () => void }) {
   const [palette, setPalette] = useAtom(paletteAtom);
   const resetView = useSetAtom(resetViewAtom);
 
-  const handleVectorAChange = (index: 0 | 1 | 2, val: number) => {
+  const handleVectorAChange = (ort: 'x' | 'y' | 'z', val: number) => {
     const nextA = palette.a.clone();
-    if (index === 0) nextA.x = val;
-    if (index === 1) nextA.y = val;
-    if (index === 2) nextA.z = val;
-
+    nextA[ort] = val;
     setPalette(prev => ({
       ...prev,
       a: nextA,
@@ -52,26 +54,25 @@ export function Palette({ close }: { close: () => void }) {
       </CardHeader>
 
       <CardContent className="h-max max-h-[80vh] snap-y snap-mandatory scrollbar-thin scrollbar-thumb-muted-foreground/20 space-y-6 overflow-y-auto pr-2 text-sm">
-        <section className="h-max snap-start snap-always space-y-4 rounded-lg border border-border/40 bg-background/40 p-3.5 backdrop-blur-md">
+        <section className="3 h-max snap-start snap-always rounded-lg border border-border/40 bg-background/40 p-3.5 backdrop-blur-md">
           <div className="flex items-center gap-1.5 text-xs font-medium text-foreground">
-            <Sun className="h-3.5 w-3.5 text-amber-500" />
-            <h3>Пресет палитры</h3>
+            <Sparkles className="h-3.5 w-3.5 text-amber-500" />
+            <h3>Быстрые пресеты</h3>
           </div>
 
-          <div className="flex flex-col gap-2">
-            <Select value={null as null | ColorPalette} onValueChange={val => val && setPresetPalette(val)}>
-              <SelectTrigger className="h-9 w-full">
-                <SelectValue placeholder="Выберите палитру" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={'electric' satisfies ColorPalette}>Electric Blue</SelectItem>
-                <SelectItem value={'fire' satisfies ColorPalette}>Fire & Magma</SelectItem>
-                <SelectItem value={'classic' satisfies ColorPalette}>Classic Smooth</SelectItem>
-                <SelectItem value={'psychedelic' satisfies ColorPalette}>Psychedelic</SelectItem>
-                <SelectItem value={'monochrome' satisfies ColorPalette}>Monochrome</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger className="mt-3 flex w-full justify-between rounded-sm bg-background/50 p-2 text-xs text-muted-foreground hover:text-foreground">
+              <span>Применить готовую палитру...</span>
+              <ChevronDown className="h-3.5 w-3.5 opacity-50" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuItem onClick={() => setPresetPalette('electric')}>Electric Blue</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setPresetPalette('fire')}>Fire & Magma</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setPresetPalette('classic')}>Classic Smooth</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setPresetPalette('psychedelic')}>Psychedelic</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setPresetPalette('monochrome')}>Monochrome</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </section>
 
         {/* Блок 1: Вектор A (Яркость / Offset) */}
@@ -95,7 +96,7 @@ export function Palette({ close }: { close: () => void }) {
                 min={0}
                 max={1}
                 step={0.01}
-                onValueChange={val => handleVectorAChange(0, Array.isArray(val) ? val[0] : val)}
+                onValueChange={val => handleVectorAChange('x', Array.isArray(val) ? val[0] : val)}
               />
             </PaletteControl>
 
@@ -107,7 +108,7 @@ export function Palette({ close }: { close: () => void }) {
                 min={0}
                 max={1}
                 step={0.01}
-                onValueChange={val => handleVectorAChange(1, Array.isArray(val) ? val[0] : val)}
+                onValueChange={val => handleVectorAChange('y', Array.isArray(val) ? val[0] : val)}
               />
             </PaletteControl>
 
@@ -119,7 +120,7 @@ export function Palette({ close }: { close: () => void }) {
                 min={0}
                 max={1}
                 step={0.01}
-                onValueChange={val => handleVectorAChange(2, Array.isArray(val) ? val[0] : val)}
+                onValueChange={val => handleVectorAChange('z', Array.isArray(val) ? val[0] : val)}
               />
             </PaletteControl>
           </div>

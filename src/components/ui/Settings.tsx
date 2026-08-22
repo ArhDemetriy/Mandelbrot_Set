@@ -4,10 +4,7 @@ import { useState } from 'react';
 
 import { Button } from '@/components/shadcn_ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/shadcn_ui/card';
-import { Label } from '@/components/shadcn_ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/shadcn_ui/select';
 import { offsetAtom, resetViewAtom, zoomAtom } from '@/store/fractalStore';
-import { setPresetPalette, type ColorPalette } from '@/store/paletteStore';
 
 export function Settings({ close }: { close: () => void }) {
   const [zoom] = useAtom(zoomAtom);
