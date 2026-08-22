@@ -3,7 +3,7 @@ import { atomWithDefault } from 'jotai/utils';
 import { Vector3 } from 'three';
 import { debounce } from 'lodash-es';
 
-export type ColorPalette = 'classic' | 'fire' | 'electric' | 'psychedelic' | 'monochrome';
+export type ColorPalette = 'classic' | 'fire' | 'electric' | 'psychedelic' | 'monochrome' | 'custom';
 
 const DEFAULT_STATE: {
   offset: [number, number];
@@ -120,6 +120,9 @@ export const paletteMapAtom = atom(get => {
         c: new Vector3(1.0, 1.0, 1.0),
         d: new Vector3(0.0, 0.0, 0.0),
       };
+    case 'custom': {
+      return get(customPalette);
+    }
     case 'classic':
     default:
       return {
@@ -129,4 +132,11 @@ export const paletteMapAtom = atom(get => {
         d: new Vector3(0.0, 0.33 * TWO_PI, 0.67 * TWO_PI),
       };
   }
+});
+
+export const customPalette = atom({
+  a: new Vector3(0.5, 0.5, 0.5),
+  b: new Vector3(0.5, 0.5, 0.5),
+  c: new Vector3(1.0, 1.0, 1.0),
+  d: new Vector3(0.0, 0.33 * TWO_PI, 0.67 * TWO_PI),
 });
