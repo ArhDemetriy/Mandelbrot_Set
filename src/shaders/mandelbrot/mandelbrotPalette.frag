@@ -48,7 +48,7 @@ void main() {
             if(data.y <= 0.0 || data.x <= 0.0) {
                 pc_color = vec4(0.0, 0.0, 0.0, 1.0);
             }
-            float t = getSmoothIter(data.y, data.x) / 30.0;
+            float t = getSmoothIter(data.y, data.x);
             pc_color = vec4(getPaletteColor(t), 1.0);
         }
         return;

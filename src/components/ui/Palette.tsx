@@ -1,19 +1,19 @@
 import { useAtomValue, useSetAtom } from 'jotai';
-import { ChevronDown, ChevronUp, Contrast, RotateCcw, Sparkles, Sun } from 'lucide-react';
+import { useAtomCallback } from 'jotai/utils';
+import { AudioLines, ChevronDown, ChevronUp, Contrast, RotateCcw, Sparkles, Sun, Waves } from 'lucide-react';
+import { useCallback, type ReactNode } from 'react';
 
 import { Button } from '@/components/shadcn_ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/shadcn_ui/card';
-import { Slider } from '@/components/shadcn_ui/slider';
-import { resetViewAtom } from '@/store/fractalStore';
-import { paletteAtom, setPresetPalette } from '@/store/paletteStore';
-import { useCallback, type ReactNode } from 'react';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/shadcn_ui/dropdown-menu';
-import { useAtomCallback } from 'jotai/utils';
+import { Slider } from '@/components/shadcn_ui/slider';
+import { resetViewAtom } from '@/store/fractalStore';
+import { paletteAtom, setPresetPalette } from '@/store/paletteStore';
 
 function PaletteControl({ title, value, children }: { title: ReactNode; value: ReactNode; children: ReactNode }) {
   return (
@@ -25,6 +25,7 @@ function PaletteControl({ title, value, children }: { title: ReactNode; value: R
   );
 }
 
+const TWO_PI = 2.0 * Math.PI;
 export function Palette({ close }: { close: () => void }) {
   const resetView = useSetAtom(resetViewAtom);
   const palette = useAtomValue(paletteAtom);
@@ -171,6 +172,100 @@ export function Palette({ close }: { close: () => void }) {
                 max={1}
                 step={0.01}
                 onValueChange={val => handleVectorChange('b', 'z', Array.isArray(val) ? val[0] : val)}
+              />
+            </PaletteControl>
+          </div>
+        </section>
+
+        {/* Блок 3: Вектор C (Частота) */}
+        <section className="h-max snap-start snap-always space-y-4 rounded-lg border border-border/40 bg-background/40 p-3.5 backdrop-blur-md">
+          <div className="flex items-center gap-1.5 text-xs font-medium text-foreground">
+            <Waves className="h-3.5 w-3.5 text-cyan-400" />
+            <h3>Частота (Вектор C)</h3>
+          </div>
+
+          <p className="text-[11px] leading-snug text-muted-foreground">
+            Скорость смены цвета (количество циклов косинуса).
+          </p>
+
+          <div className="flex w-full items-center justify-between gap-5 pt-1">
+            <PaletteControl title={<h4 className="text-red-400">Red (C.x)</h4>} value={palette.c.x.toFixed(2)}>
+              <Slider
+                orientation="vertical"
+                value={[palette.c.x]}
+                min={0}
+                max={5}
+                step={0.05}
+                onValueChange={val => handleVectorChange('c', 'x', Array.isArray(val) ? val[0] : val)}
+              />
+            </PaletteControl>
+
+            <PaletteControl title={<h4 className="text-green-400">Green (C.y)</h4>} value={palette.c.y.toFixed(2)}>
+              <Slider
+                orientation="vertical"
+                value={[palette.c.y]}
+                min={0}
+                max={5}
+                step={0.05}
+                onValueChange={val => handleVectorChange('c', 'y', Array.isArray(val) ? val[0] : val)}
+              />
+            </PaletteControl>
+
+            <PaletteControl title={<h4 className="text-blue-400">Blue (C.z)</h4>} value={palette.c.z.toFixed(2)}>
+              <Slider
+                orientation="vertical"
+                value={[palette.c.z]}
+                min={0}
+                max={5}
+                step={0.05}
+                onValueChange={val => handleVectorChange('c', 'z', Array.isArray(val) ? val[0] : val)}
+              />
+            </PaletteControl>
+          </div>
+        </section>
+
+        {/* Блок 4: Вектор D (Фаза) */}
+        <section className="h-max snap-start snap-always space-y-4 rounded-lg border border-border/40 bg-background/40 p-3.5 backdrop-blur-md">
+          <div className="flex items-center gap-1.5 text-xs font-medium text-foreground">
+            <AudioLines className="h-3.5 w-3.5 text-emerald-400" />
+            <h3>Фазовый сдвиг (Вектор D)</h3>
+          </div>
+
+          <p className="text-[11px] leading-snug text-muted-foreground">
+            Смещение волны цвета для разделения пиков R, G и B.
+          </p>
+
+          <div className="flex w-full items-center justify-between gap-5 pt-1">
+            <PaletteControl title={<h4 className="text-red-400">Red (D.x)</h4>} value={palette.d.x.toFixed(2)}>
+              <Slider
+                orientation="vertical"
+                value={[palette.d.x]}
+                min={0}
+                max={TWO_PI}
+                step={0.01}
+                onValueChange={val => handleVectorChange('d', 'x', Array.isArray(val) ? val[0] : val)}
+              />
+            </PaletteControl>
+
+            <PaletteControl title={<h4 className="text-green-400">Green (D.y)</h4>} value={palette.d.y.toFixed(2)}>
+              <Slider
+                orientation="vertical"
+                value={[palette.d.y]}
+                min={0}
+                max={TWO_PI}
+                step={0.01}
+                onValueChange={val => handleVectorChange('d', 'y', Array.isArray(val) ? val[0] : val)}
+              />
+            </PaletteControl>
+
+            <PaletteControl title={<h4 className="text-blue-400">Blue (D.z)</h4>} value={palette.d.z.toFixed(2)}>
+              <Slider
+                orientation="vertical"
+                value={[palette.d.z]}
+                min={0}
+                max={TWO_PI}
+                step={0.01}
+                onValueChange={val => handleVectorChange('d', 'z', Array.isArray(val) ? val[0] : val)}
               />
             </PaletteControl>
           </div>
