@@ -6,10 +6,10 @@ import { Button } from '@/components/shadcn_ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/shadcn_ui/card';
 import { Label } from '@/components/shadcn_ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/shadcn_ui/select';
-import { type ColorPalette, offsetAtom, paletteAtom, resetViewAtom, zoomAtom } from '@/store/fractalStore';
+import { offsetAtom, resetViewAtom, zoomAtom } from '@/store/fractalStore';
+import { setPresetPalette, type ColorPalette } from '@/store/paletteStore';
 
 export function Settings({ close }: { close: () => void }) {
-  const [palette, setPalette] = useAtom(paletteAtom);
   const [zoom] = useAtom(zoomAtom);
   const [offset] = useAtom(offsetAtom);
   const resetView = useSetAtom(resetViewAtom);
@@ -38,8 +38,8 @@ export function Settings({ close }: { close: () => void }) {
       <CardContent className="space-y-5 text-sm">
         {/* Цветовая палитра */}
         <div className="space-y-2">
-          <Label className="text-xs text-muted-foreground">Цветовая палитра</Label>
-          <Select value={palette} onValueChange={val => val && setPalette(val as ColorPalette)}>
+          <Label className="text-xs text-muted-foreground">Пресет палитры</Label>
+          <Select value={null as null | ColorPalette} onValueChange={val => val && setPresetPalette(val)}>
             <SelectTrigger className="h-9 w-full">
               <SelectValue placeholder="Выберите палитру" />
             </SelectTrigger>
@@ -49,7 +49,6 @@ export function Settings({ close }: { close: () => void }) {
               <SelectItem value={'classic' satisfies ColorPalette}>Classic Smooth</SelectItem>
               <SelectItem value={'psychedelic' satisfies ColorPalette}>Psychedelic</SelectItem>
               <SelectItem value={'monochrome' satisfies ColorPalette}>Monochrome</SelectItem>
-              <SelectItem value={'custom' satisfies ColorPalette}>Custom palette</SelectItem>
             </SelectContent>
           </Select>
         </div>

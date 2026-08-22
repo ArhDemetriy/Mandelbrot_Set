@@ -4,10 +4,11 @@ import { ChevronUp, RotateCcw, Sun } from 'lucide-react';
 import { Button } from '@/components/shadcn_ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/shadcn_ui/card';
 import { Slider } from '@/components/shadcn_ui/slider';
-import { customPalette, resetViewAtom } from '@/store/fractalStore';
+import { resetViewAtom } from '@/store/fractalStore';
+import { paletteAtom } from '@/store/paletteStore';
 
 export function Palette({ close }: { close: () => void }) {
-  const [palette, setPalette] = useAtom(customPalette);
+  const [palette, setPalette] = useAtom(paletteAtom);
   const resetView = useSetAtom(resetViewAtom);
 
   const handleVectorAChange = (index: 0 | 1 | 2, val: number) => {
