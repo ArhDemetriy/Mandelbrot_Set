@@ -1,20 +1,7 @@
-import { useAtom, useSetAtom } from 'jotai';
-import { Check, ChevronUp, Compass, RotateCcw, SlidersHorizontal, Brush, Sun } from 'lucide-react';
+import { SlidersHorizontal, Brush } from 'lucide-react';
 import { useState } from 'react';
 
 import { Button } from '@/components/shadcn_ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/shadcn_ui/card';
-import { Label } from '@/components/shadcn_ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/shadcn_ui/select';
-import {
-  type ColorPalette,
-  customPalette,
-  offsetAtom,
-  paletteAtom,
-  resetViewAtom,
-  zoomAtom,
-} from '@/store/fractalStore';
-import { Slider } from '../shadcn_ui/slider';
 import { Palette } from './Palette';
 import { Settings } from './Settings';
 
