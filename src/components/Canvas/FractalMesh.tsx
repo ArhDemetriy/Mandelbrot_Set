@@ -3,7 +3,8 @@ import { useAtomValue } from 'jotai';
 import { useEffect, useMemo, useState } from 'react';
 
 import { MandelbrotEngine } from '@/engine/MandelbrotEngine';
-import { offsetAtom, paletteMapAtom, resetEventAtom, zoomAtom } from '@/store/fractalStore';
+import { offsetAtom, resetEventAtom, zoomAtom } from '@/store/fractalStore';
+import { paletteAtom } from '@/store/paletteStore';
 
 export function FractalMesh() {
   const { gl, size, invalidate } = useThree();
@@ -18,7 +19,7 @@ export function FractalMesh() {
 
   const offset = useAtomValue(offsetAtom);
   const zoom = useAtomValue(zoomAtom);
-  const paletteMap = useAtomValue(paletteMapAtom);
+  const palette = useAtomValue(paletteAtom);
   const resetEvent = useAtomValue(resetEventAtom);
 
   const { 0: mandelbrotEngine } = useState(
@@ -32,10 +33,10 @@ export function FractalMesh() {
         zoom,
         offset,
 
-        paletteA: paletteMap.a,
-        paletteB: paletteMap.b,
-        paletteC: paletteMap.c,
-        paletteD: paletteMap.d,
+        paletteA: palette.a,
+        paletteB: palette.b,
+        paletteC: palette.c,
+        paletteD: palette.d,
       })
   );
 
@@ -71,12 +72,12 @@ export function FractalMesh() {
 
   useEffect(() => {
     mandelbrotEngine.setPalette({
-      paletteA: paletteMap.a,
-      paletteB: paletteMap.b,
-      paletteC: paletteMap.c,
-      paletteD: paletteMap.d,
+      paletteA: palette.a,
+      paletteB: palette.b,
+      paletteC: palette.c,
+      paletteD: palette.d,
     });
-  }, [paletteMap, mandelbrotEngine]);
+  }, [palette, mandelbrotEngine]);
 
   useFrame(mandelbrotEngine.thisFreeStep, 1);
 
