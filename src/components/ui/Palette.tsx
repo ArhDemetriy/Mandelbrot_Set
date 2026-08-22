@@ -15,16 +15,6 @@ import { Slider } from '@/components/shadcn_ui/slider';
 import { resetViewAtom } from '@/store/fractalStore';
 import { paletteAtom, setPresetPalette } from '@/store/paletteStore';
 
-function PaletteControl({ title, value, children }: { title: ReactNode; value: ReactNode; children: ReactNode }) {
-  return (
-    <div className="flex flex-1 flex-col gap-2">
-      <span className="self-center font-mono text-[11px] font-medium">{title}</span>
-      <span className="font-center self-center font-mono text-xs text-foreground">{value}</span>
-      <div className="flex flex-col justify-center py-1">{children}</div>
-    </div>
-  );
-}
-
 const TWO_PI = 2.0 * Math.PI;
 export function Palette({ close }: { close: () => void }) {
   const resetView = useSetAtom(resetViewAtom);
@@ -272,5 +262,15 @@ export function Palette({ close }: { close: () => void }) {
         </section>
       </CardContent>
     </Card>
+  );
+}
+
+function PaletteControl({ title, value, children }: { title: ReactNode; value: ReactNode; children: ReactNode }) {
+  return (
+    <div className="flex flex-1 flex-col gap-2">
+      <span className="self-center font-mono text-[11px] font-medium">{title}</span>
+      <span className="font-center self-center font-mono text-xs text-foreground">{value}</span>
+      <div className="flex flex-col justify-center py-1">{children}</div>
+    </div>
   );
 }
