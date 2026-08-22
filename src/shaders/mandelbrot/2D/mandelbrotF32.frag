@@ -4,6 +4,7 @@ precision highp float;
 layout(location = 0) out vec4 pc_result;
 /** z, iz, dz, diz */
 layout(location = 1) out vec4 pc_state;
+layout(location = 2) out vec4 unknown;
 
 /** ITERATION_ON_FRAME, MAX_ITERATIONS */
 uniform vec2 u_const;

@@ -2,6 +2,7 @@ precision highp float;
 
 layout(location = 0) out vec4 pc_result;
 layout(location = 1) out vec4 pc_state;
+layout(location = 2) out vec4 unknown;
 
 uniform sampler2D u_prev_result;
 uniform sampler2D u_prev_state;

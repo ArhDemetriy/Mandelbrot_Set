@@ -109,7 +109,7 @@ export class ComputePass {
       },
       u_view: {
         /** 1/(zoom*height), width/2, height/2  */
-        value: new Vector3(1 / (zoom / height), width / 2, height / 2),
+        value: new Vector3(1 / (zoom * height), width / 2, height / 2),
       },
       u_prev_result: { value: result },
       u_prev_state: { value: state },

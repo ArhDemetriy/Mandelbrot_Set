@@ -26,14 +26,18 @@ uniform sampler2D u_prev_state2;
 #define LIM_FRAME -4.0
 #define LIM_MAX -5.0
 
-// Сложение двух DS чисел
+// Полноценный Knuth TwoSum (работает для любых magnitudes a и b)
 vec2 ds_add(vec2 a, vec2 b) {
-    float t1 = a.x + b.x;
-    float e = t1 - a.x;
-    float t2 = ((b.x - e) + (a.x - (t1 - e))) + a.y + b.y;
-    float hi = t1 + t2;
-    float lo = t2 - (hi - t1);
-    return vec2(hi, lo);
+    float hi = a.x + b.x;
+    float v = hi - a.x;
+    float lo = (a.x - (hi - v)) + (b.x - v) + a.y + b.y;
+    float hi_final = hi + lo;
+    float lo_final = lo - (hi_final - hi);
+    return vec2(hi_final, lo_final);
+}
+
+vec2 ds_sub(vec2 a, vec2 b) {
+    return ds_add(a, vec2(-b.x, -b.y));
 }
 
 // Функция расщепления float на 12-битные старшую и младшую части
@@ -44,7 +48,7 @@ vec2 split(float a) {
     return vec2(a_hi, a_lo);
 }
 
-// Умножение DS чисел без применения fma()
+// Умножение DS чисел
 vec2 ds_mul(vec2 a, vec2 b) {
     vec2 a_sp = split(a.x);
     vec2 b_sp = split(b.x);
@@ -113,10 +117,12 @@ void main() {
             return;
         }
 
-        z_x = ds_add(ds_add(z2x, vec2(-z2y.x, -z2y.y)), c_x);
-
+        // ВАЖНО: Сначала высчитываем zxy со старым z_x
         vec2 zxy = ds_mul(z_x, z_y);
         vec2 zxy2 = ds_add(zxy, zxy);
+
+        // Затем обновляем Z
+        z_x = ds_add(ds_sub(z2x, z2y), c_x);
         z_y = ds_add(zxy2, c_y);
 
         if(z_x == checkZ_x && z_y == checkZ_y) {
